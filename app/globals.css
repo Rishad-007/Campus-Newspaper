@@ -94,10 +94,22 @@ a {
     padding-bottom: 4mm;
   }
 
+  .print-brand-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12mm;
+  }
+
+  .print-brand-row p {
+    margin: 0;
+  }
+
   .article-print-title {
-    font-size: 26pt !important;
-    line-height: 1.16 !important;
+    font-size: 28pt !important;
+    line-height: 1.08 !important;
     margin-bottom: 3mm !important;
+    letter-spacing: -0.02em;
   }
 
   .article-print-meta {
@@ -119,11 +131,14 @@ a {
     column-gap: 8mm;
     text-align: justify;
     hyphens: auto;
+    widows: 3;
+    orphans: 3;
   }
 
   .article-body-print p {
     margin: 0 0 3.5mm !important;
     break-inside: avoid;
+    line-height: 1.52;
   }
 
   .article-body-print p:first-child::first-letter {
@@ -132,5 +147,11 @@ a {
     line-height: 0.9;
     padding-right: 2mm;
     font-weight: 700;
+  }
+
+  .article-print .text-xs,
+  .article-print .text-sm,
+  .article-print .text-lg {
+    color: #111 !important;
   }
 }

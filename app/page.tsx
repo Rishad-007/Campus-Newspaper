@@ -1,8 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import {
-  getPublishedArticles,
-  getTagList,
-} from "@/lib/mock-news";
+import { getPublishedArticles, getTagList } from "@/lib/mock-news";
 
 export default function Home() {
   const stories = getPublishedArticles();
@@ -14,8 +12,12 @@ export default function Home() {
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
       <header className="paper-surface rounded-2xl px-4 py-5 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs tracking-[0.16em] text-stone-600 uppercase">Saturday Edition • Dhaka • Vol 01</p>
-          <p className="text-xs tracking-[0.14em] text-stone-600 uppercase">Frontpage Highlights</p>
+          <p className="text-xs tracking-[0.16em] text-stone-600 uppercase">
+            Saturday Edition • Dhaka • Vol 01
+          </p>
+          <p className="text-xs tracking-[0.14em] text-stone-600 uppercase">
+            Frontpage Highlights
+          </p>
         </div>
       </header>
 
@@ -24,6 +26,16 @@ export default function Home() {
           <p className="text-xs font-semibold tracking-[0.14em] text-[var(--accent)] uppercase">
             Lead Story
           </p>
+          <div className="mt-4 overflow-hidden rounded-xl border border-stone-300 bg-stone-100">
+            <Image
+              src={leadStory.heroImage}
+              alt={leadStory.title}
+              width={1200}
+              height={720}
+              priority
+              className="h-full w-full object-cover"
+            />
+          </div>
           <h2 className="font-display mt-2 text-3xl font-semibold leading-tight text-stone-900 sm:text-4xl">
             {leadStory.title}
           </h2>

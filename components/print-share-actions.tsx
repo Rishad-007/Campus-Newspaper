@@ -110,7 +110,7 @@ export function PrintShareActions({ title }: PrintShareActionsProps) {
           onClick={() => window.print()}
           className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs font-semibold tracking-wide text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
         >
-          <FaPrint className="text-sm" /> Print
+          <FaPrint className="text-sm" /> Print PDF
         </button>
       </div>
     </div>
