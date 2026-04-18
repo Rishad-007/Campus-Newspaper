@@ -51,6 +51,13 @@ type ArticleTagLinkRow = {
   } | null;
 };
 
+type ManagedTag = {
+  id: string;
+  slug: string;
+  name: string;
+  usageCount: number;
+};
+
 const ROLE_OPTIONS: Array<{ label: string; value: UserRole }> = [
   { label: "Owner", value: "owner" },
   { label: "Editor", value: "editor" },
@@ -182,6 +189,8 @@ export default function AdminPage() {
   const [journalistEmail, setJournalistEmail] = useState("");
   const [journalistPassword, setJournalistPassword] = useState("");
   const [openedJournalistId, setOpenedJournalistId] = useState<string>("");
+  const [removalChoiceForJournalistId, setRemovalChoiceForJournalistId] =
+    useState<string | null>(null);
 
   const [rejectReasonByStory, setRejectReasonByStory] = useState<
     Record<string, string>
@@ -198,6 +207,8 @@ export default function AdminPage() {
   const [writerImageFile, setWriterImageFile] = useState<File | null>(null);
   const [writerImagePreview, setWriterImagePreview] = useState<string>("");
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
+  const [managedTags, setManagedTags] = useState<ManagedTag[]>([]);
+  const [tagSearchTerm, setTagSearchTerm] = useState("");
 
   const journalists = useMemo(
     () => users.filter((user) => user.role === "writer"),
@@ -245,6 +256,7 @@ export default function AdminPage() {
     currentUser?.role === "sub-editor";
   const canModerate = canManageJournalists;
   const canManagePlacement = canManageJournalists;
+  const canManageTags = canManageJournalists;
   const canWrite =
     currentUser?.role === "writer" || currentUser?.role === "owner";
 
@@ -265,6 +277,20 @@ export default function AdminPage() {
       ["overview", "journalists", "pending", "placement"].includes(tab.key),
     );
   }, [currentUser]);
+
+  const filteredManagedTags = useMemo(() => {
+    const normalizedQuery = tagSearchTerm.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return managedTags;
+    }
+
+    return managedTags.filter(
+      (tag) =>
+        tag.slug.toLowerCase().includes(normalizedQuery) ||
+        tag.name.toLowerCase().includes(normalizedQuery),
+    );
+  }, [managedTags, tagSearchTerm]);
 
   async function loadData() {
     setLoading(true);
@@ -381,13 +407,39 @@ export default function AdminPage() {
               .in("article_id", articleIds)
           ).data;
 
+    const { data: tagRows, error: tagsError } = await supabase
+      .from("tags")
+      .select("id, slug, name")
+      .order("slug", { ascending: true });
+
+    if (tagsError) {
+      setError(tagsError.message);
+      setLoading(false);
+      return;
+    }
+
     const tagMap = new Map<string, string[]>();
+    const tagUsageCount = new Map<string, number>();
     (articleTagRows as ArticleTagLinkRow[] | null)?.forEach((row) => {
       if (!row.tags) return;
       const current = tagMap.get(row.article_id) ?? [];
       current.push(row.tags.slug);
       tagMap.set(row.article_id, current);
+
+      const usageCount = tagUsageCount.get(row.tag_id) ?? 0;
+      tagUsageCount.set(row.tag_id, usageCount + 1);
     });
+
+    setManagedTags(
+      (
+        (tagRows ?? []) as Array<{ id: string; slug: string; name: string }>
+      ).map((tag) => ({
+        id: tag.id,
+        slug: tag.slug,
+        name: tag.name,
+        usageCount: tagUsageCount.get(tag.id) ?? 0,
+      })),
+    );
 
     const mappedStories = typedRows.map((story) => {
       const category = Array.isArray(story.categories)
@@ -588,6 +640,10 @@ export default function AdminPage() {
 
   async function assignRoleToUser() {
     if (!canManageUsers || !selectedUserId) return;
+    if (selectedUser?.role === "owner") {
+      setError("Owner role is protected and cannot be changed.");
+      return;
+    }
     setSaving(true);
     setError("");
     setNotice("");
@@ -610,6 +666,10 @@ export default function AdminPage() {
 
   async function removeUserRole() {
     if (!canManageUsers || !selectedUserId) return;
+    if (selectedUser?.role === "owner") {
+      setError("Owner role is protected and cannot be removed.");
+      return;
+    }
     setSaving(true);
     setError("");
     setNotice("");
@@ -746,7 +806,10 @@ export default function AdminPage() {
     await loadData();
   }
 
-  async function removeJournalist(journalistId: string) {
+  async function removeJournalist(
+    journalistId: string,
+    deleteStories: boolean,
+  ) {
     if (!canManageJournalists) return;
 
     setSaving(true);
@@ -754,7 +817,7 @@ export default function AdminPage() {
     setNotice("");
 
     const response = await fetch(
-      `/api/admin/journalists?userId=${journalistId}`,
+      `/api/admin/journalists?userId=${journalistId}&deleteStories=${deleteStories ? "1" : "0"}`,
       {
         method: "DELETE",
       },
@@ -768,7 +831,13 @@ export default function AdminPage() {
       return;
     }
 
-    setNotice("Journalist removed.");
+    setRemovalChoiceForJournalistId(null);
+
+    setNotice(
+      deleteStories
+        ? "Journalist removed with all stories deleted."
+        : "Journalist removed and stories kept under your account.",
+    );
     await loadData();
   }
 
@@ -846,6 +915,60 @@ export default function AdminPage() {
     }
 
     setNotice("Story deleted.");
+    await loadData();
+  }
+
+  async function hideTagFromStories(tag: ManagedTag) {
+    if (!canManageTags) return;
+
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    const { error: deleteError } = await supabase
+      .from("article_tags")
+      .delete()
+      .eq("tag_id", tag.id);
+
+    setSaving(false);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    setNotice(`Tag #${tag.slug} hidden from all stories.`);
+    await loadData();
+  }
+
+  async function removeTagPermanently(tag: ManagedTag) {
+    if (!canManageTags) return;
+
+    const confirmed = window.confirm(
+      `Remove tag #${tag.slug} permanently? This action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    const { error: deleteError } = await supabase
+      .from("tags")
+      .delete()
+      .eq("id", tag.id);
+
+    setSaving(false);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    setNotice(`Tag #${tag.slug} removed permanently.`);
     await loadData();
   }
 
@@ -1058,6 +1181,7 @@ export default function AdminPage() {
   }
 
   const selectedUser = users.find((user) => user.id === selectedUserId);
+  const isSelectedUserOwner = selectedUser?.role === "owner";
   const selectedJournalist = journalists.find(
     (journalist) => journalist.id === openedJournalistId,
   );
@@ -1343,6 +1467,7 @@ export default function AdminPage() {
                       onChange={(event) =>
                         setSelectedRoleForUser(event.target.value as UserRole)
                       }
+                      disabled={isSelectedUserOwner}
                       className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
                     >
                       {ROLE_OPTIONS.map((role) => (
@@ -1370,7 +1495,7 @@ export default function AdminPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled={saving}
+                    disabled={saving || isSelectedUserOwner}
                     onClick={() => void assignRoleToUser()}
                     className="rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -1378,7 +1503,7 @@ export default function AdminPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={saving}
+                    disabled={saving || isSelectedUserOwner}
                     onClick={() => void removeUserRole()}
                     className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -1399,6 +1524,12 @@ export default function AdminPage() {
                     Selected: {selectedUser.full_name} ({selectedUser.email})
                   </p>
                 )}
+
+                {isSelectedUserOwner && (
+                  <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    Owner account is protected. Role change is disabled.
+                  </p>
+                )}
               </>
             )}
           </section>
@@ -1417,33 +1548,95 @@ export default function AdminPage() {
                   key={journalist.id}
                   className="rounded-xl border border-stone-300 bg-white p-3"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-semibold text-stone-900">
-                        {journalist.full_name}
-                      </p>
-                      <p className="text-xs text-stone-600">
-                        {journalist.email}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setOpenedJournalistId(journalist.id)}
-                        className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700"
-                      >
-                        Open Profile
-                      </button>
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() => void removeJournalist(journalist.id)}
-                        className="rounded-full border border-red-400 px-3 py-1 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
+                  {/** Inline choice keeps removal action explicit and avoids blocking browser dialogs. */}
+                  {(() => {
+                    const isRemovalChoiceOpen =
+                      removalChoiceForJournalistId === journalist.id;
+
+                    return (
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="font-semibold text-stone-900">
+                              {journalist.full_name}
+                            </p>
+                            <p className="text-xs text-stone-600">
+                              {journalist.email}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenedJournalistId(journalist.id)
+                              }
+                              className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700"
+                            >
+                              Open Profile
+                            </button>
+                            <button
+                              type="button"
+                              disabled={saving}
+                              onClick={() =>
+                                setRemovalChoiceForJournalistId((previous) =>
+                                  previous === journalist.id
+                                    ? null
+                                    : journalist.id,
+                                )
+                              }
+                              className="rounded-full border border-red-400 px-3 py-1 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isRemovalChoiceOpen ? "Close" : "Remove"}
+                            </button>
+                          </div>
+                        </div>
+                        {isRemovalChoiceOpen && (
+                          <div className="mt-3 rounded-lg border border-dashed border-red-300 bg-red-50/40 p-3">
+                            <p className="text-xs font-semibold tracking-[0.12em] text-red-800 uppercase">
+                              Remove Journalist Account
+                            </p>
+                            <p className="mt-2 text-xs leading-5 text-stone-700">
+                              Choose whether to keep this journalist&#39;s
+                              stories under your account or delete them
+                              permanently.
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() =>
+                                  void removeJournalist(journalist.id, false)
+                                }
+                                className="rounded-full border border-stone-400 bg-white px-3 py-1 text-xs font-semibold text-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Keep Stories
+                              </button>
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() =>
+                                  void removeJournalist(journalist.id, true)
+                                }
+                                className="rounded-full border border-red-500 bg-red-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Delete Stories
+                              </button>
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() =>
+                                  setRemovalChoiceForJournalistId(null)
+                                }
+                                className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
@@ -1569,6 +1762,14 @@ export default function AdminPage() {
 
                 <p className="mt-2 text-sm text-stone-700">{story.excerpt}</p>
 
+                <div className="mt-3 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
+                  <img
+                    src={story.heroImageUrl}
+                    alt={story.title}
+                    className="h-48 w-full object-cover"
+                  />
+                </div>
+
                 <button
                   type="button"
                   onClick={() =>
@@ -1589,6 +1790,13 @@ export default function AdminPage() {
                     <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
                       Full Article Content
                     </p>
+                    <div className="mt-3 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
+                      <img
+                        src={story.heroImageUrl}
+                        alt={story.title}
+                        className="h-56 w-full object-cover"
+                      />
+                    </div>
                     <p className="mt-2 whitespace-pre-line text-sm leading-7 text-stone-800">
                       {story.body}
                     </p>
@@ -1724,6 +1932,68 @@ export default function AdminPage() {
                   </div>
                 </article>
               ))}
+          </div>
+
+          <div className="mt-8 border-t border-dashed border-stone-400 pt-6">
+            <h3 className="font-display text-2xl text-stone-900">
+              Tag Management
+            </h3>
+            <p className="mt-2 text-sm text-stone-600">
+              Hide removes a tag from all stories. Remove deletes the tag
+              permanently.
+            </p>
+
+            <div className="mt-4 max-w-sm">
+              <input
+                value={tagSearchTerm}
+                onChange={(event) => setTagSearchTerm(event.target.value)}
+                placeholder="Search tags"
+                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none ring-(--accent) focus:ring"
+              />
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {filteredManagedTags.length === 0 && (
+                <p className="text-sm text-stone-700">No tags found.</p>
+              )}
+
+              {filteredManagedTags.map((tag) => (
+                <article
+                  key={tag.id}
+                  className="rounded-xl border border-stone-300 bg-white p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-stone-900">
+                        #{tag.slug}
+                      </p>
+                      <p className="text-xs text-stone-600">
+                        {tag.usageCount} linked stor
+                        {tag.usageCount === 1 ? "y" : "ies"}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void hideTagFromStories(tag)}
+                        className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Hide Tag
+                      </button>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void removeTagPermanently(tag)}
+                        className="rounded-full border border-red-500 px-3 py-1 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Remove Tag
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
       )}

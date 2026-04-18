@@ -111,9 +111,17 @@ export default async function Home() {
           <h3 className="font-display text-2xl text-stone-900 sm:text-3xl">
             Latest Reports
           </h3>
-          <p className="text-sm text-stone-600">
-            Responsive cards for mobile, tablet, and desktop
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-stone-600">
+              Responsive cards for mobile, tablet, and desktop
+            </p>
+            <Link
+              href="/news"
+              className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+            >
+              Browse All News
+            </Link>
+          </div>
         </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -122,10 +130,15 @@ export default async function Home() {
               key={story.id}
               className="rounded-xl border border-stone-300 bg-(--surface) p-4 shadow-sm"
             >
-              <div
-                className="mb-3 h-36 rounded-lg bg-cover bg-center"
-                style={{ backgroundImage: "url('/newsroom.jpg')" }}
-              />
+              <div className="mb-3 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
+                <Image
+                  src={story.heroImage}
+                  alt={story.title}
+                  width={640}
+                  height={360}
+                  className="h-36 w-full object-cover"
+                />
+              </div>
               <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
                 {story.categoryLabel}
               </p>

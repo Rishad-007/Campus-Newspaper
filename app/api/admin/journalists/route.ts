@@ -8,7 +8,7 @@ type AddJournalistBody = {
   password?: string;
 };
 
-async function getRequesterRole() {
+async function getRequesterProfile() {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -29,15 +29,24 @@ async function getRequesterRole() {
     return { error: "Profile not found", status: 403 as const };
   }
 
-  if (profile.role !== "owner") {
-    return { error: "Forbidden", status: 403 as const };
-  }
-
   return { userId: user.id, role: profile.role as string };
 }
 
+async function getRequesterWithRole(requiredRoles: string[]) {
+  const requester = await getRequesterProfile();
+  if ("error" in requester) {
+    return requester;
+  }
+
+  if (!requiredRoles.includes(requester.role)) {
+    return { error: "Forbidden", status: 403 as const };
+  }
+
+  return requester;
+}
+
 export async function POST(request: Request) {
-  const requester = await getRequesterRole();
+  const requester = await getRequesterWithRole(["owner"]);
   if ("error" in requester) {
     return NextResponse.json(
       { error: requester.error },
@@ -85,7 +94,11 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const requester = await getRequesterRole();
+  const requester = await getRequesterWithRole([
+    "owner",
+    "editor",
+    "sub-editor",
+  ]);
   if ("error" in requester) {
     return NextResponse.json(
       { error: requester.error },
@@ -95,6 +108,7 @@ export async function DELETE(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId")?.trim();
+  const deleteStories = searchParams.get("deleteStories") === "1";
 
   if (!userId) {
     return NextResponse.json({ error: "userId is required" }, { status: 400 });
@@ -120,6 +134,39 @@ export async function DELETE(request: Request) {
       { error: "Only journalist (writer) accounts can be removed here" },
       { status: 400 },
     );
+  }
+
+  if (userId === requester.userId) {
+    return NextResponse.json(
+      { error: "You cannot remove your own account from this action" },
+      { status: 400 },
+    );
+  }
+
+  if (deleteStories) {
+    const { error: deleteArticlesError } = await adminClient
+      .from("articles")
+      .delete()
+      .eq("author_id", userId);
+
+    if (deleteArticlesError) {
+      return NextResponse.json(
+        { error: deleteArticlesError.message },
+        { status: 400 },
+      );
+    }
+  } else {
+    const { error: reassignArticlesError } = await adminClient
+      .from("articles")
+      .update({ author_id: requester.userId })
+      .eq("author_id", userId);
+
+    if (reassignArticlesError) {
+      return NextResponse.json(
+        { error: reassignArticlesError.message },
+        { status: 400 },
+      );
+    }
   }
 
   const { error } = await adminClient.auth.admin.deleteUser(userId);

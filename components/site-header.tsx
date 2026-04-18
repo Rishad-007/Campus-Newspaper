@@ -65,8 +65,8 @@ export function SiteHeader() {
   }, []);
 
   useEffect(() => {
-    const compactEnterThreshold = 140;
-    const compactExitThreshold = 88;
+    const compactEnterThreshold = 200;
+    const compactExitThreshold = 24;
     let ticking = false;
 
     const updateCompact = () => {

@@ -268,7 +268,11 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
           </div>
 
           {status && (
-            <p className="mt-4 text-sm text-stone-700" role="status" aria-live="polite">
+            <p
+              className="mt-4 text-sm text-stone-700"
+              role="status"
+              aria-live="polite"
+            >
               {status}
             </p>
           )}
