@@ -4,6 +4,12 @@ import { getPublicStories, getPublicTagList } from "@/lib/news-service";
 
 export default async function Home() {
   const stories = await getPublicStories();
+  const leadStory = stories.find((story) => story.placement === "lead") ?? null;
+  const topStories = stories
+    .filter((story) => story.placement === "brief")
+    .slice(0, 3);
+  const latestReports = stories.filter((story) => story.placement === "latest");
+
   if (stories.length === 0) {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
@@ -18,8 +24,6 @@ export default async function Home() {
       </main>
     );
   }
-  const leadStory = stories[0];
-  const topStories = stories.slice(1, 4);
   const tags = await getPublicTagList();
 
   return (
@@ -36,72 +40,89 @@ export default async function Home() {
       </header>
 
       <section className="news-grid">
-        <article className="paper-surface rounded-2xl p-4 sm:p-6">
-          <p className="text-xs font-semibold tracking-[0.14em] text-(--accent) uppercase">
-            Lead Story
-          </p>
-          <div className="mt-4 overflow-hidden rounded-xl border border-stone-300 bg-stone-100">
-            <Image
-              src={leadStory.heroImage}
-              alt={leadStory.title}
-              width={1200}
-              height={720}
-              priority
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <h2 className="font-display mt-2 text-3xl font-semibold leading-tight text-stone-900 sm:text-4xl">
-            {leadStory.title}
-          </h2>
-          <p
-            className={`${leadStory.locale === "bn" ? "font-bangla" : ""} mt-4 text-lg leading-8 text-stone-700`}
-          >
-            {leadStory.excerpt}
-          </p>
+        {leadStory ? (
+          <article className="paper-surface rounded-2xl p-4 sm:p-6">
+            <p className="text-xs font-semibold tracking-[0.14em] text-(--accent) uppercase">
+              Lead Story
+            </p>
+            <div className="mt-4 overflow-hidden rounded-xl border border-stone-300 bg-stone-100">
+              <Image
+                src={leadStory.heroImage}
+                alt={leadStory.title}
+                width={1200}
+                height={720}
+                priority
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <h2 className="font-display mt-2 text-3xl font-semibold leading-tight text-stone-900 sm:text-4xl">
+              {leadStory.title}
+            </h2>
+            <p
+              className={`${leadStory.locale === "bn" ? "font-bangla" : ""} mt-4 text-lg leading-8 text-stone-700`}
+            >
+              {leadStory.excerpt}
+            </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2 text-xs font-semibold tracking-wider text-stone-600 uppercase">
-            <span>{leadStory.categoryLabel}</span>
-            <span>•</span>
-            <span>{leadStory.readTime} min read</span>
-          </div>
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-xs font-semibold tracking-wider text-stone-600 uppercase">
+              <span>{leadStory.categoryLabel}</span>
+              <span>•</span>
+              <span>{leadStory.readTime} min read</span>
+            </div>
 
-          <Link
-            href={`/news/${leadStory.slug}`}
-            className="mt-6 inline-flex items-center rounded-full bg-stone-900 px-5 py-2 text-sm font-semibold text-stone-100 transition hover:bg-stone-700"
-          >
-            Read full report
-          </Link>
-        </article>
+            <Link
+              href={`/news/${leadStory.slug}`}
+              className="mt-6 inline-flex items-center rounded-full bg-stone-900 px-5 py-2 text-sm font-semibold text-stone-100 transition hover:bg-stone-700"
+            >
+              Read full report
+            </Link>
+          </article>
+        ) : (
+          <article className="paper-surface rounded-2xl p-4 sm:p-6">
+            <p className="text-xs font-semibold tracking-[0.14em] text-(--accent) uppercase">
+              Lead Story
+            </p>
+            <p className="mt-4 text-sm text-stone-700">
+              No lead story selected yet. Choose one in Front Page Placement.
+            </p>
+          </article>
+        )}
 
         <aside className="paper-surface rounded-2xl p-4 sm:p-6">
           <h3 className="font-display border-b border-dashed border-stone-400 pb-3 text-2xl text-stone-900">
             Frontline Briefs
           </h3>
           <div className="mt-4 space-y-4">
-            {topStories.map((story) => (
-              <article
-                key={story.id}
-                className="border-b border-stone-200 pb-4 last:border-b-0"
-              >
-                <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
-                  {story.categoryLabel}
-                </p>
-                <h4 className="font-display mt-1 text-xl leading-tight text-stone-900">
-                  {story.title}
-                </h4>
-                <p
-                  className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 text-sm leading-6 text-stone-700`}
+            {topStories.length === 0 ? (
+              <p className="text-sm text-stone-700">
+                No brief stories selected yet.
+              </p>
+            ) : (
+              topStories.map((story) => (
+                <article
+                  key={story.id}
+                  className="border-b border-stone-200 pb-4 last:border-b-0"
                 >
-                  {story.excerpt}
-                </p>
-                <Link
-                  href={`/news/${story.slug}`}
-                  className="mt-2 inline-block text-sm font-semibold text-(--accent)"
-                >
-                  Continue reading
-                </Link>
-              </article>
-            ))}
+                  <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
+                    {story.categoryLabel}
+                  </p>
+                  <h4 className="font-display mt-1 text-xl leading-tight text-stone-900">
+                    {story.title}
+                  </h4>
+                  <p
+                    className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 text-sm leading-6 text-stone-700`}
+                  >
+                    {story.excerpt}
+                  </p>
+                  <Link
+                    href={`/news/${story.slug}`}
+                    className="mt-2 inline-block text-sm font-semibold text-(--accent)"
+                  >
+                    Continue reading
+                  </Link>
+                </article>
+              ))
+            )}
           </div>
         </aside>
       </section>
@@ -125,43 +146,49 @@ export default async function Home() {
         </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {stories.map((story) => (
-            <article
-              key={story.id}
-              className="rounded-xl border border-stone-300 bg-(--surface) p-4 shadow-sm"
-            >
-              <div className="mb-3 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
-                <Image
-                  src={story.heroImage}
-                  alt={story.title}
-                  width={640}
-                  height={360}
-                  className="h-36 w-full object-cover"
-                />
-              </div>
-              <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
-                {story.categoryLabel}
-              </p>
-              <h4 className="font-display mt-2 text-2xl leading-tight text-stone-900">
-                {story.title}
-              </h4>
-              <p
-                className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 line-clamp-3 text-sm leading-6 text-stone-700`}
+          {latestReports.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-stone-400 p-5 text-sm text-stone-700 sm:col-span-2 xl:col-span-3">
+              No latest reports selected yet.
+            </div>
+          ) : (
+            latestReports.map((story) => (
+              <article
+                key={story.id}
+                className="rounded-xl border border-stone-300 bg-(--surface) p-4 shadow-sm"
               >
-                {story.excerpt}
-              </p>
-              <div className="mt-3 flex items-center justify-between text-xs text-stone-600">
-                <span>{story.author}</span>
-                <span>{story.readTime} min</span>
-              </div>
-              <Link
-                href={`/news/${story.slug}`}
-                className="mt-4 inline-block text-sm font-semibold text-(--accent)"
-              >
-                Open story
-              </Link>
-            </article>
-          ))}
+                <div className="mb-3 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
+                  <Image
+                    src={story.heroImage}
+                    alt={story.title}
+                    width={640}
+                    height={360}
+                    className="h-36 w-full object-cover"
+                  />
+                </div>
+                <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
+                  {story.categoryLabel}
+                </p>
+                <h4 className="font-display mt-2 text-2xl leading-tight text-stone-900">
+                  {story.title}
+                </h4>
+                <p
+                  className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 line-clamp-3 text-sm leading-6 text-stone-700`}
+                >
+                  {story.excerpt}
+                </p>
+                <div className="mt-3 flex items-center justify-between text-xs text-stone-600">
+                  <span>{story.author}</span>
+                  <span>{story.readTime} min</span>
+                </div>
+                <Link
+                  href={`/news/${story.slug}`}
+                  className="mt-4 inline-block text-sm font-semibold text-(--accent)"
+                >
+                  Open story
+                </Link>
+              </article>
+            ))
+          )}
         </div>
       </section>
 

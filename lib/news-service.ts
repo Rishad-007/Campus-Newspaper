@@ -14,6 +14,7 @@ export type PublicStory = {
   publishedAt: string;
   readTime: number;
   heroImage: string;
+  placement: "none" | "lead" | "brief" | "latest";
 };
 
 type ArticleRow = {
@@ -100,6 +101,7 @@ function storyFromRow(row: ArticleRow, tags: string[]): PublicStory {
     publishedAt,
     readTime: Math.max(2, Math.ceil(row.body.split(/\s+/).length / 220)),
     heroImage: row.hero_image_url ?? "/newsroom.jpg",
+    placement: row.placement,
   };
 }
 
