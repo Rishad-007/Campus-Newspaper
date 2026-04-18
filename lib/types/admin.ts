@@ -1,4 +1,6 @@
 export type UserRole = "owner" | "editor" | "sub-editor" | "writer";
+export type RequestedRole = "editor" | "writer";
+export type AccessRequestStatus = "none" | "pending" | "rejected";
 export type StoryStatus = "draft" | "submitted" | "published";
 
 export type ProfileRow = {
@@ -6,6 +8,9 @@ export type ProfileRow = {
   full_name: string;
   email: string;
   role: UserRole;
+  requested_role: RequestedRole | null;
+  access_request_status: AccessRequestStatus;
+  access_request_updated_at: string | null;
 };
 
 export type ArticleRow = {

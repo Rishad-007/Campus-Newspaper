@@ -42,7 +42,9 @@ Open `http://localhost:3000`.
 1. Go to `/auth` and create an account.
 2. First account becomes `writer` by default.
 3. Promote an account to `owner` directly in Supabase table editor (`profiles.role`) once.
-4. Sign in as owner and use `/admin` for role and journalist management.
+4. Signed-in users can submit access requests for Journalist or Editor from `/auth`.
+5. Owner and Editor can review and accept/reject pending role requests from `/admin` -> Users tab.
+6. Owner can still directly assign roles and reset passwords in `/admin`.
 
 ### Important files
 

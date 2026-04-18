@@ -4,13 +4,22 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCategoryMap } from "@/lib/mock-news";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { hasSupabasePublicConfig } from "@/lib/supabase/config";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export function SiteHeader() {
   const categories = getCategoryMap();
   const [compact, setCompact] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
 
-  const supabase = getSupabaseBrowserClient();
+  useEffect(() => {
+    if (!hasSupabasePublicConfig()) {
+      return;
+    }
+
+    setSupabase(getSupabaseBrowserClient());
+  }, []);
 
   useEffect(() => {
     const updateCompact = () => {
@@ -24,6 +33,10 @@ export function SiteHeader() {
   }, []);
 
   useEffect(() => {
+    if (!supabase) {
+      return;
+    }
+
     let mounted = true;
 
     const loadSession = async () => {
@@ -50,9 +63,13 @@ export function SiteHeader() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, [supabase]);
 
   async function handleSignOut() {
+    if (!supabase) {
+      return;
+    }
+
     await supabase.auth.signOut();
     window.location.href = "/";
   }
@@ -93,7 +110,7 @@ export function SiteHeader() {
             The bilingual digital newspaper
           </p>
           <div className="mt-3 flex items-center justify-center gap-2 text-xs font-semibold">
-            {isAuthenticated ? (
+            {supabase && isAuthenticated ? (
               <>
                 <Link
                   href="/admin"

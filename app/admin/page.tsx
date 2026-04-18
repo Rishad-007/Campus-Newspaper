@@ -4,7 +4,14 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import type { ArticleRow, ProfileRow, StoryStatus, UserRole } from "@/lib/types/admin";
+import { hasSupabasePublicConfig } from "@/lib/supabase/config";
+import type {
+  ArticleRow,
+  ProfileRow,
+  RequestedRole,
+  StoryStatus,
+  UserRole,
+} from "@/lib/types/admin";
 
 type TabKey =
   | "overview"
@@ -71,6 +78,25 @@ function slugFromTitle(input: string) {
 }
 
 export default function AdminPage() {
+  if (!hasSupabasePublicConfig()) {
+    return (
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+        <section className="paper-surface rounded-2xl p-6 sm:p-8">
+          <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
+            Admin Desk
+          </p>
+          <h1 className="font-display mt-2 text-4xl text-stone-900">
+            Supabase is not configured
+          </h1>
+          <p className="mt-3 text-sm leading-7 text-stone-700">
+            Add the public Supabase environment variables to use the role
+            management and story workflow screens.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
 
@@ -125,12 +151,24 @@ export default function AdminPage() {
     [stories],
   );
 
+  const pendingAccessRequests = useMemo(
+    () =>
+      users.filter(
+        (user) =>
+          user.access_request_status === "pending" &&
+          ["writer", "editor"].includes(user.requested_role ?? ""),
+      ),
+    [users],
+  );
+
   const openedJournalistStories = useMemo(
     () => stories.filter((story) => story.authorId === openedJournalistId),
     [openedJournalistId, stories],
   );
 
   const canManageUsers = currentUser?.role === "owner";
+  const canApproveAccessRequests =
+    currentUser?.role === "owner" || currentUser?.role === "editor";
   const canManageJournalists =
     currentUser?.role === "owner" ||
     currentUser?.role === "editor" ||
@@ -144,6 +182,11 @@ export default function AdminPage() {
     if (currentUser.role === "owner") return TABS;
     if (currentUser.role === "writer") {
       return TABS.filter((tab) => ["overview", "my-stories"].includes(tab.key));
+    }
+    if (currentUser.role === "editor") {
+      return TABS.filter((tab) =>
+        ["overview", "users", "journalists", "pending", "placement"].includes(tab.key),
+      );
     }
     return TABS.filter((tab) =>
       ["overview", "journalists", "pending", "placement"].includes(tab.key),
@@ -170,10 +213,33 @@ export default function AdminPage() {
 
     setAuthUserId(user.id);
 
-    const { data: profiles, error: profilesError } = await supabase
+    let profiles: unknown[] | null = null;
+    let profilesError: { message: string } | null = null;
+
+    const profilesResult = await supabase
       .from("profiles")
-      .select("id, full_name, email, role")
+      .select(
+        "id, full_name, email, role, requested_role, access_request_status, access_request_updated_at",
+      )
       .order("created_at", { ascending: true });
+
+    if (profilesResult.error) {
+      const fallbackProfilesResult = await supabase
+        .from("profiles")
+        .select("id, full_name, email, role")
+        .order("created_at", { ascending: true });
+
+      profiles = (fallbackProfilesResult.data ?? []).map((profile) => ({
+        ...profile,
+        requested_role: null,
+        access_request_status: "none",
+        access_request_updated_at: null,
+      }));
+      profilesError = fallbackProfilesResult.error;
+    } else {
+      profiles = profilesResult.data;
+      profilesError = null;
+    }
 
     if (profilesError) {
       setError(profilesError.message);
@@ -283,6 +349,41 @@ export default function AdminPage() {
     }
 
     setNotice("Role removed. User is now writer.");
+    await loadData();
+  }
+
+  async function resolveAccessRequest(
+    userId: string,
+    requestedRole: RequestedRole,
+    action: "approve" | "reject",
+  ) {
+    if (!canApproveAccessRequests) return;
+
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    const response = await fetch("/api/admin/access-requests", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        requestedRole,
+        action,
+      }),
+    });
+
+    setSaving(false);
+
+    if (!response.ok) {
+      const body = (await response.json()) as { error?: string };
+      setError(body.error ?? "Failed to resolve access request");
+      return;
+    }
+
+    setNotice(action === "approve" ? "Access request approved." : "Access request rejected.");
     await loadData();
   }
 
@@ -728,90 +829,150 @@ export default function AdminPage() {
               {stories.filter((story) => story.status === "draft").length}
             </p>
           </article>
+          <article className="paper-surface rounded-2xl p-5">
+            <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">Pending Access</p>
+            <p className="font-display mt-2 text-3xl text-stone-900">{pendingAccessRequests.length}</p>
+          </article>
         </section>
       )}
 
-      {activeTab === "users" && canManageUsers && (
+      {activeTab === "users" && (canManageUsers || canApproveAccessRequests) && (
         <section className="paper-surface rounded-2xl p-5 sm:p-6">
-          <h2 className="font-display text-2xl text-stone-900">Owner User Controls</h2>
+          <h2 className="font-display text-2xl text-stone-900">User Access Queue</h2>
           <p className="mt-2 text-sm text-stone-600">
-            Owner can assign roles and change passwords for newsroom users.
+            Owner and Editor can review pending Journalist and Editor role requests.
           </p>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-stone-700">Select user</span>
-              <select
-                value={selectedUserId}
-                onChange={(event) => setSelectedUserId(event.target.value)}
-                className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
-              >
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.full_name} ({titleCaseRole(user.role)})
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="mt-5 grid gap-4">
+            {pendingAccessRequests.length === 0 && (
+              <p className="text-sm text-stone-700">No pending access requests right now.</p>
+            )}
 
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-stone-700">Select role</span>
-              <select
-                value={selectedRoleForUser}
-                onChange={(event) => setSelectedRoleForUser(event.target.value as UserRole)}
-                className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
-              >
-                {ROLE_OPTIONS.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-stone-700">New password</span>
-              <input
-                type="password"
-                value={passwordDraft}
-                onChange={(event) => setPasswordDraft(event.target.value)}
-                placeholder="Minimum 8 characters"
-                className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
-              />
-            </label>
+            {pendingAccessRequests.map((requestUser) => (
+              <article key={requestUser.id} className="rounded-xl border border-stone-300 bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-stone-900">{requestUser.full_name}</p>
+                    <p className="text-xs text-stone-600">{requestUser.email}</p>
+                  </div>
+                  <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                    Pending {requestUser.requested_role === "writer" ? "Journalist" : "Editor"}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-stone-500">
+                  Requested at: {requestUser.access_request_updated_at ? formatDate(requestUser.access_request_updated_at) : "-"}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={saving || !requestUser.requested_role}
+                    onClick={() =>
+                      requestUser.requested_role &&
+                      void resolveAccessRequest(requestUser.id, requestUser.requested_role, "approve")
+                    }
+                    className="rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    disabled={saving || !requestUser.requested_role}
+                    onClick={() =>
+                      requestUser.requested_role &&
+                      void resolveAccessRequest(requestUser.id, requestUser.requested_role, "reject")
+                    }
+                    className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void assignRoleToUser()}
-              className="rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Assign Role
-            </button>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void removeUserRole()}
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Remove Role (Set Writer)
-            </button>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void changePasswordForUser()}
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Change Password
-            </button>
-          </div>
+          {canManageUsers && (
+            <>
+              <h3 className="font-display mt-8 text-xl text-stone-900">Owner User Controls</h3>
+              <p className="mt-2 text-sm text-stone-600">
+                Owner can directly assign roles and change passwords for newsroom users.
+              </p>
 
-          {selectedUser && (
-            <p className="mt-4 text-sm text-stone-700">
-              Selected: {selectedUser.full_name} ({selectedUser.email})
-            </p>
+              <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-stone-700">Select user</span>
+                  <select
+                    value={selectedUserId}
+                    onChange={(event) => setSelectedUserId(event.target.value)}
+                    className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
+                  >
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.full_name} ({titleCaseRole(user.role)})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-stone-700">Select role</span>
+                  <select
+                    value={selectedRoleForUser}
+                    onChange={(event) => setSelectedRoleForUser(event.target.value as UserRole)}
+                    className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
+                  >
+                    {ROLE_OPTIONS.map((role) => (
+                      <option key={role.value} value={role.value}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-sm font-semibold text-stone-700">New password</span>
+                  <input
+                    type="password"
+                    value={passwordDraft}
+                    onChange={(event) => setPasswordDraft(event.target.value)}
+                    placeholder="Minimum 8 characters"
+                    className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void assignRoleToUser()}
+                  className="rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Assign Role
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void removeUserRole()}
+                  className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Remove Role (Set Writer)
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void changePasswordForUser()}
+                  className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Change Password
+                </button>
+              </div>
+
+              {selectedUser && (
+                <p className="mt-4 text-sm text-stone-700">
+                  Selected: {selectedUser.full_name} ({selectedUser.email})
+                </p>
+              )}
+            </>
           )}
         </section>
       )}

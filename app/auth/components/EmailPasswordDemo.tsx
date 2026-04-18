@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { AuthDemoPage } from "./AuthDemoPage";
+import type { RequestedRole } from "@/lib/types/admin";
 
 type EmailPasswordDemoProps = {
   user: User | null;
@@ -20,6 +21,31 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
   const [status, setStatus] = useState("");
   const supabase = getSupabaseBrowserClient();
   const [currentUser, setCurrentUser] = useState<User | null>(user);
+  const [requestStatus, setRequestStatus] = useState<
+    "none" | "pending" | "rejected"
+  >("none");
+  const [requestedRole, setRequestedRole] = useState<RequestedRole | null>(null);
+
+  async function loadRequestState(userId: string | null) {
+    if (!userId) {
+      setRequestStatus("none");
+      setRequestedRole(null);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("access_request_status, requested_role")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      return;
+    }
+
+    setRequestStatus(data.access_request_status ?? "none");
+    setRequestedRole(data.requested_role ?? null);
+  }
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -28,9 +54,12 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
   }
 
   useEffect(() => {
+    void loadRequestState(user?.id ?? null);
+
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setCurrentUser(session?.user ?? null);
+        void loadRequestState(session?.user?.id ?? null);
       },
     );
 
@@ -38,6 +67,31 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
       listener?.subscription.unsubscribe();
     };
   }, [supabase]);
+
+  async function requestAccess(role: RequestedRole) {
+    if (!currentUser) return;
+
+    setStatus("");
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        requested_role: role,
+        access_request_status: "pending",
+        access_request_updated_at: new Date().toISOString(),
+      })
+      .eq("id", currentUser.id);
+
+    if (error) {
+      setStatus(error.message);
+      return;
+    }
+
+    setRequestStatus("pending");
+    setRequestedRole(role);
+    setStatus(
+      `Access request submitted for ${role === "writer" ? "Journalist" : "Editor"}.`,
+    );
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,31 +137,23 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
     >
       {!currentUser && (
         <form
-          className="relative overflow-hidden rounded-4xl border border-emerald-500/30 bg-linear-to-br from-[#05130d] via-[#04100c] to-[#0c2a21] p-8 text-slate-100 shadow-[0_35px_90px_rgba(2,6,23,0.65)]"
+          className="paper-surface rounded-2xl border border-stone-300 p-6 text-stone-900 shadow-sm sm:p-7"
           onSubmit={handleSubmit}
         >
-          <div
-            className="pointer-events-none absolute -left-4 -top-4 -z-10 h-20 w-28 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.25),transparent)] blur-lg"
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute -bottom-10 right-2 -z-10 h-28 w-40 rounded-full bg-[linear-gradient(140deg,rgba(45,212,191,0.32),rgba(59,130,246,0.12))] blur-xl"
-            aria-hidden="true"
-          />
-          <div className="absolute inset-x-8 top-6 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-300/80">
-            <span>Primary</span>
-            <span>Flow</span>
+          <div className="flex items-center justify-between text-[11px] font-semibold tracking-[0.18em] text-stone-600 uppercase">
+            <span>Primary Flow</span>
+            <span>Daily Darpan</span>
           </div>
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-emerald-200/70">
+              <p className="text-xs tracking-[0.2em] text-stone-600 uppercase">
                 Credentials
               </p>
-              <h3 className="text-xl font-semibold text-white">
+              <h3 className="font-display text-2xl text-stone-900">
                 {mode === "signup" ? "Create an account" : "Welcome back"}
               </h3>
             </div>
-            <div className="flex rounded-full border border-white/10 bg-white/[0.07] p-1 text-xs font-semibold text-slate-300">
+            <div className="flex rounded-full border border-stone-300 bg-white/70 p-1 text-xs font-semibold text-stone-600">
               {(["signup", "signin"] as Mode[]).map((option) => (
                 <button
                   key={option}
@@ -116,8 +162,8 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
                   onClick={() => setMode(option)}
                   className={`rounded-full px-4 py-1 transition ${
                     mode === option
-                      ? "bg-emerald-500/30 text-white shadow shadow-emerald-500/20"
-                      : "text-slate-400"
+                      ? "bg-(--accent) text-white"
+                      : "text-stone-600"
                   }`}
                 >
                   {option === "signup" ? "Sign up" : "Sign in"}
@@ -127,29 +173,29 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
           </div>
           <div className="mt-6 space-y-4">
             {mode === "signup" && (
-              <label className="block text-sm font-medium text-slate-200">
+              <label className="block text-sm font-medium text-stone-800">
                 Full name
                 <input
                   type="text"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-[#0b1b18] px-3 py-2.5 text-base text-white placeholder-slate-500 shadow-inner shadow-black/30 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none"
                   placeholder="Your full name"
                 />
               </label>
             )}
-            <label className="block text-sm font-medium text-slate-200">
+            <label className="block text-sm font-medium text-stone-800">
               Email
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-[#0b1b18] px-3 py-2.5 text-base text-white placeholder-slate-500 shadow-inner shadow-black/30 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none"
                 placeholder="you@email.com"
               />
             </label>
-            <label className="block text-sm font-medium text-slate-200">
+            <label className="block text-sm font-medium text-stone-800">
               Password
               <input
                 type="password"
@@ -157,33 +203,29 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
                 onChange={(event) => setPassword(event.target.value)}
                 required
                 minLength={8}
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-[#0b1b18] px-3 py-2.5 text-base text-white placeholder-slate-500 shadow-inner shadow-black/30 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none"
                 placeholder="At least 8 characters"
               />
             </label>
           </div>
           <button
             type="submit"
-            className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-900/30 transition hover:bg-emerald-400"
+            className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-(--accent) px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
           >
             {mode === "signup" ? "Create account" : "Sign in"}
           </button>
           {status && (
-            <p
-              className="mt-4 text-sm text-slate-300"
-              role="status"
-              aria-live="polite"
-            >
+            <p className="mt-4 text-sm text-stone-700" role="status" aria-live="polite">
               {status}
             </p>
           )}
         </form>
       )}
-      <section className="rounded-[28px] border border-white/10 bg-white/5 p-7 text-slate-200 shadow-[0_25px_70px_rgba(2,6,23,0.65)] backdrop-blur">
+      <section className="paper-surface rounded-2xl border border-stone-300 p-6 text-stone-800 shadow-sm sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Session</h3>
-            <p className="mt-1 text-sm text-slate-400">
+            <h3 className="font-display text-2xl text-stone-900">Session</h3>
+            <p className="mt-1 text-sm text-stone-600">
               {currentUser
                 ? "Hydrated by getUser + onAuthStateChange."
                 : "Sign in to hydrate this panel instantly."}
@@ -192,8 +234,8 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
               currentUser
-                ? "bg-emerald-500/20 text-emerald-200"
-                : "bg-white/10 text-slate-400"
+                ? "border border-emerald-300 bg-emerald-50 text-emerald-700"
+                : "border border-stone-300 bg-white text-stone-600"
             }`}
           >
             {currentUser ? "Active" : "Idle"}
@@ -201,17 +243,17 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
         </div>
         {currentUser ? (
           <>
-            <dl className="mt-5 space-y-3 text-sm text-slate-200">
+            <dl className="mt-5 space-y-3 text-sm text-stone-800">
               <div className="flex items-center justify-between gap-6">
-                <dt className="text-slate-400">User ID</dt>
+                <dt className="text-stone-600">User ID</dt>
                 <dd className="font-mono text-xs">{currentUser.id}</dd>
               </div>
               <div className="flex items-center justify-between gap-6">
-                <dt className="text-slate-400">Email</dt>
+                <dt className="text-stone-600">Email</dt>
                 <dd>{currentUser.email}</dd>
               </div>
               <div className="flex items-center justify-between gap-6">
-                <dt className="text-slate-400">Last sign in</dt>
+                <dt className="text-stone-600">Last sign in</dt>
                 <dd>
                   {currentUser.last_sign_in_at
                     ? new Date(currentUser.last_sign_in_at).toLocaleString()
@@ -219,21 +261,51 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
                 </dd>
               </div>
             </dl>
+
+            <div className="mt-6 rounded-xl border border-dashed border-stone-400 bg-white/70 p-4">
+              <p className="text-xs font-semibold tracking-[0.14em] text-stone-600 uppercase">
+                Access Requests
+              </p>
+              <p className="mt-2 text-sm text-stone-700">
+                {requestStatus === "pending" && requestedRole
+                  ? `Pending ${requestedRole === "writer" ? "Journalist" : "Editor"} request.`
+                  : requestStatus === "rejected"
+                    ? "Your last request was rejected. You can submit again."
+                    : "Request Journalist or Editor access for newsroom features."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void requestAccess("writer")}
+                  className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700"
+                >
+                  Request Journalist
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void requestAccess("editor")}
+                  className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700"
+                >
+                  Request Editor
+                </button>
+              </div>
+            </div>
+
             <button
-              className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-stone-900 px-4 py-2.5 text-sm font-semibold text-stone-100 transition hover:bg-stone-700"
               onClick={() => void handleSignOut()}
             >
               Sign out
             </button>
             <Link
               href="/admin"
-              className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-stone-400 px-4 py-2.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
             >
               Go to Admin Desk
             </Link>
           </>
         ) : (
-          <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-slate-900/50 p-5 text-sm text-slate-400">
+          <div className="mt-6 rounded-xl border border-dashed border-stone-400 bg-white/70 p-5 text-sm text-stone-700">
             Session metadata will show up here after a successful sign in.
           </div>
         )}

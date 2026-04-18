@@ -11,6 +11,9 @@ create table if not exists public.profiles (
   full_name text not null,
   email text not null unique,
   role text not null default 'writer' check (role in ('owner', 'editor', 'sub-editor', 'writer')),
+  requested_role text check (requested_role in ('writer', 'editor')),
+  access_request_status text not null default 'none' check (access_request_status in ('none', 'pending', 'rejected')),
+  access_request_updated_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -234,7 +237,7 @@ with check (
 
 ```sql
 -- Check profile roles and owner-first behavior
-select id, full_name, email, role, created_at
+select id, full_name, email, role, requested_role, access_request_status, access_request_updated_at, created_at
 from public.profiles
 order by created_at asc;
 
@@ -242,4 +245,31 @@ order by created_at asc;
 select id, title, status, placement, author_id, updated_at
 from public.articles
 order by updated_at desc;
+```
+
+### 4) Patch Existing Database For Access Requests
+
+```sql
+alter table public.profiles
+  add column if not exists requested_role text;
+
+alter table public.profiles
+  add column if not exists access_request_status text not null default 'none';
+
+alter table public.profiles
+  add column if not exists access_request_updated_at timestamptz;
+
+alter table public.profiles
+  drop constraint if exists profiles_requested_role_check;
+
+alter table public.profiles
+  add constraint profiles_requested_role_check
+  check (requested_role in ('writer', 'editor'));
+
+alter table public.profiles
+  drop constraint if exists profiles_access_request_status_check;
+
+alter table public.profiles
+  add constraint profiles_access_request_status_check
+  check (access_request_status in ('none', 'pending', 'rejected'));
 ```
