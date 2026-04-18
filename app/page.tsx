@@ -1,12 +1,26 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getPublishedArticles, getTagList } from "@/lib/mock-news";
+import { getPublicStories, getPublicTagList } from "@/lib/news-service";
 
-export default function Home() {
-  const stories = getPublishedArticles();
+export default async function Home() {
+  const stories = await getPublicStories();
+  if (stories.length === 0) {
+    return (
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+        <section className="paper-surface rounded-2xl p-5 sm:p-6">
+          <h1 className="font-display text-3xl text-stone-900 sm:text-5xl">
+            Daily Darpan
+          </h1>
+          <p className="mt-3 text-sm text-stone-700">
+            No published news yet. The editorial desk is preparing updates.
+          </p>
+        </section>
+      </main>
+    );
+  }
   const leadStory = stories[0];
   const topStories = stories.slice(1, 4);
-  const tags = getTagList();
+  const tags = await getPublicTagList();
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
@@ -23,7 +37,7 @@ export default function Home() {
 
       <section className="news-grid">
         <article className="paper-surface rounded-2xl p-4 sm:p-6">
-          <p className="text-xs font-semibold tracking-[0.14em] text-[var(--accent)] uppercase">
+          <p className="text-xs font-semibold tracking-[0.14em] text-(--accent) uppercase">
             Lead Story
           </p>
           <div className="mt-4 overflow-hidden rounded-xl border border-stone-300 bg-stone-100">
@@ -69,7 +83,7 @@ export default function Home() {
                 key={story.id}
                 className="border-b border-stone-200 pb-4 last:border-b-0"
               >
-                <p className="text-xs font-semibold tracking-[0.12em] text-[var(--accent-2)] uppercase">
+                <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
                   {story.categoryLabel}
                 </p>
                 <h4 className="font-display mt-1 text-xl leading-tight text-stone-900">
@@ -82,7 +96,7 @@ export default function Home() {
                 </p>
                 <Link
                   href={`/news/${story.slug}`}
-                  className="mt-2 inline-block text-sm font-semibold text-[var(--accent)]"
+                  className="mt-2 inline-block text-sm font-semibold text-(--accent)"
                 >
                   Continue reading
                 </Link>
@@ -106,13 +120,13 @@ export default function Home() {
           {stories.map((story) => (
             <article
               key={story.id}
-              className="rounded-xl border border-stone-300 bg-[var(--surface)] p-4 shadow-sm"
+              className="rounded-xl border border-stone-300 bg-(--surface) p-4 shadow-sm"
             >
               <div
                 className="mb-3 h-36 rounded-lg bg-cover bg-center"
                 style={{ backgroundImage: "url('/newsroom.jpg')" }}
               />
-              <p className="text-xs font-semibold tracking-[0.12em] text-[var(--accent-2)] uppercase">
+              <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
                 {story.categoryLabel}
               </p>
               <h4 className="font-display mt-2 text-2xl leading-tight text-stone-900">
@@ -129,7 +143,7 @@ export default function Home() {
               </div>
               <Link
                 href={`/news/${story.slug}`}
-                className="mt-4 inline-block text-sm font-semibold text-[var(--accent)]"
+                className="mt-4 inline-block text-sm font-semibold text-(--accent)"
               >
                 Open story
               </Link>

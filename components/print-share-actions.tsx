@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaFacebookF } from "react-icons/fa";
 import { FaLink, FaPrint, FaXTwitter } from "react-icons/fa6";
 
@@ -12,13 +12,12 @@ export function PrintShareActions({ title }: PrintShareActionsProps) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
     "idle",
   );
+  const [pageUrl, setPageUrl] = useState("");
+  const [canNativeShare, setCanNativeShare] = useState(false);
 
-  const pageUrl = useMemo(() => {
-    if (typeof window === "undefined") {
-      return "";
-    }
-
-    return window.location.href;
+  useEffect(() => {
+    setPageUrl(window.location.href);
+    setCanNativeShare(typeof navigator.share === "function");
   }, []);
 
   async function handleCopyLink() {
@@ -94,16 +93,15 @@ export function PrintShareActions({ title }: PrintShareActionsProps) {
               : "Copy link"}
         </button>
 
-        {typeof navigator !== "undefined" &&
-          typeof navigator.share === "function" && (
-            <button
-              type="button"
-              onClick={handleNativeShare}
-              className="rounded-full border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs font-semibold tracking-wide text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
-            >
-              Share menu
-            </button>
-          )}
+        <button
+          type="button"
+          onClick={handleNativeShare}
+          disabled={!canNativeShare}
+          aria-disabled={!canNativeShare}
+          className="rounded-full border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs font-semibold tracking-wide text-stone-700 transition hover:bg-stone-900 hover:text-stone-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-stone-50 disabled:hover:text-stone-700"
+        >
+          Share menu
+        </button>
 
         <button
           type="button"

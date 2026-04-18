@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCategoryMap } from "@/lib/mock-news";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 export function SiteHeader() {
   const categories = getCategoryMap();
   const [compact, setCompact] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const supabase = getSupabaseBrowserClient();
 
   useEffect(() => {
     const updateCompact = () => {
@@ -18,6 +22,40 @@ export function SiteHeader() {
 
     return () => window.removeEventListener("scroll", updateCompact);
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSession = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (mounted) {
+        setIsAuthenticated(Boolean(user));
+      }
+    };
+
+    void loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setIsAuthenticated(Boolean(session?.user));
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase.auth]);
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
 
   return (
     <header className="paper-surface print-hidden sticky top-0 z-50 border-b border-dashed border-stone-400/90 bg-[rgba(255,253,248,0.96)] backdrop-blur-sm">
@@ -54,6 +92,32 @@ export function SiteHeader() {
           >
             The bilingual digital newspaper
           </p>
+          <div className="mt-3 flex items-center justify-center gap-2 text-xs font-semibold">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/admin"
+                  className="rounded-full border border-stone-400 px-3 py-1 transition hover:bg-stone-900 hover:text-stone-50"
+                >
+                  Admin Desk
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  className="rounded-full border border-stone-400 px-3 py-1 transition hover:bg-stone-900 hover:text-stone-50"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/auth"
+                className="rounded-full border border-stone-400 px-3 py-1 transition hover:bg-stone-900 hover:text-stone-50"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
 
         <nav
