@@ -7,11 +7,54 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+function formatEditionTimestamp(date: Date) {
+  const dayLabel = new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+  }).format(date);
+  const dateLabel = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+  const timeLabel = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+
+  return `${dayLabel} • ${dateLabel} • ${timeLabel}`;
+}
+
+function formatCompactEditionTimestamp(date: Date) {
+  const dayLabel = new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+  }).format(date);
+  const dateLabel = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+  }).format(date);
+  const timeLabel = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+
+  return `${dayLabel}, ${dateLabel} • ${timeLabel}`;
+}
+
 export function SiteHeader() {
   const categories = getCategoryMap();
   const [compact, setCompact] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+  const [editionTimestamp, setEditionTimestamp] = useState(() => {
+    const now = new Date();
+    return formatEditionTimestamp(now);
+  });
+  const [compactEditionTimestamp, setCompactEditionTimestamp] = useState(() => {
+    const now = new Date();
+    return formatCompactEditionTimestamp(now);
+  });
 
   useEffect(() => {
     if (!hasSupabasePublicConfig()) {
@@ -22,14 +65,48 @@ export function SiteHeader() {
   }, []);
 
   useEffect(() => {
+    const compactEnterThreshold = 140;
+    const compactExitThreshold = 88;
+    let ticking = false;
+
     const updateCompact = () => {
-      setCompact(window.scrollY > 24);
+      const currentScrollY = window.scrollY;
+
+      setCompact((previous) => {
+        if (previous) {
+          return currentScrollY > compactExitThreshold;
+        }
+
+        return currentScrollY > compactEnterThreshold;
+      });
+    };
+
+    const onScroll = () => {
+      if (ticking) {
+        return;
+      }
+
+      ticking = true;
+      requestAnimationFrame(() => {
+        updateCompact();
+        ticking = false;
+      });
     };
 
     updateCompact();
-    window.addEventListener("scroll", updateCompact, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
 
-    return () => window.removeEventListener("scroll", updateCompact);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      const now = new Date();
+      setEditionTimestamp(formatEditionTimestamp(now));
+      setCompactEditionTimestamp(formatCompactEditionTimestamp(now));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -77,68 +154,64 @@ export function SiteHeader() {
   return (
     <header className="paper-surface print-hidden sticky top-0 z-50 border-b border-dashed border-stone-400/90 bg-[rgba(255,253,248,0.96)] backdrop-blur-sm">
       <div
-        className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 ${compact ? "py-2" : "py-4"}`}
+        className={`mx-auto w-full max-w-6xl px-4 transition-[padding] duration-200 sm:px-6 lg:px-8 ${compact ? "py-2" : "py-3 sm:py-4"}`}
       >
-        <div
-          className={`flex flex-wrap items-center justify-between gap-3 border-b border-dashed border-stone-400 pb-3 transition-all duration-300 ${compact ? "max-h-0 overflow-hidden border-transparent pb-0 opacity-0" : "opacity-100"}`}
-        >
-          <p className="text-xs tracking-[0.16em] text-stone-600 uppercase">
-            Daily Edition • Bangladesh • Trusted Local Reporting
-          </p>
-          <div className="flex items-center gap-2 text-xs font-semibold">
-            <button className="rounded-full border border-stone-400 px-3 py-1">
-              English
-            </button>
-            <button className="font-bangla rounded-full border border-stone-400 px-3 py-1">
-              বাংলা
-            </button>
+        <div className="flex items-start justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <p className="text-[10px] tracking-[0.16em] text-stone-600 uppercase sm:text-xs">
+              Daily Edition • Bangladesh • Trusted Local Reporting
+            </p>
+            <Link
+              href="/"
+              className={`font-display mt-2 inline-block font-bold tracking-wide text-stone-900 transition-all duration-200 ${compact ? "text-2xl sm:text-3xl" : "text-4xl sm:text-6xl"}`}
+            >
+              Daily Darpan
+            </Link>
+            <p
+              className={`tracking-[0.08em] text-stone-600 uppercase transition-[max-height,opacity,margin] duration-200 ${compact ? "mt-0 max-h-0 overflow-hidden text-[10px] opacity-0" : "mt-2 max-h-8 text-xs opacity-100 sm:text-sm"}`}
+            >
+              The bilingual digital newspaper
+            </p>
           </div>
-        </div>
 
-        <div
-          className={`text-center transition-all duration-300 ${compact ? "py-1" : "pt-4"}`}
-        >
-          <Link
-            href="/"
-            className={`font-display inline-block font-bold tracking-wide text-stone-900 transition-all duration-300 ${compact ? "text-2xl sm:text-3xl" : "text-4xl sm:text-6xl"}`}
-          >
-            Daily Darpan
-          </Link>
-          <p
-            className={`tracking-[0.08em] text-stone-600 uppercase transition-all duration-300 ${compact ? "mt-1 text-[10px] opacity-0" : "mt-2 text-sm opacity-100"}`}
-          >
-            The bilingual digital newspaper
-          </p>
-          <div className="mt-3 flex items-center justify-center gap-2 text-xs font-semibold">
-            {supabase && isAuthenticated ? (
-              <>
+          <div className="flex shrink-0 flex-col items-end gap-2 text-right">
+            <p className="hidden text-[10px] font-semibold tracking-widest text-stone-700 uppercase sm:block sm:text-xs">
+              {editionTimestamp}
+            </p>
+            <p className="block font-mono text-[10px] font-semibold tabular-nums text-stone-700 sm:hidden">
+              {compactEditionTimestamp}
+            </p>
+            <div className="flex max-w-34 flex-wrap items-center justify-end gap-1.5 text-[11px] font-semibold sm:max-w-none sm:text-xs">
+              {supabase && isAuthenticated ? (
+                <>
+                  <Link
+                    href="/admin"
+                    className="rounded-full border border-stone-400 px-2.5 py-1 transition hover:bg-stone-900 hover:text-stone-50"
+                  >
+                    Admin
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void handleSignOut()}
+                    className="rounded-full border border-stone-400 px-2.5 py-1 transition hover:bg-stone-900 hover:text-stone-50"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
                 <Link
-                  href="/admin"
-                  className="rounded-full border border-stone-400 px-3 py-1 transition hover:bg-stone-900 hover:text-stone-50"
+                  href="/auth"
+                  className="rounded-full border border-stone-400 px-2.5 py-1 transition hover:bg-stone-900 hover:text-stone-50"
                 >
-                  Admin Desk
+                  Sign In
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => void handleSignOut()}
-                  className="rounded-full border border-stone-400 px-3 py-1 transition hover:bg-stone-900 hover:text-stone-50"
-                >
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <Link
-                href="/auth"
-                className="rounded-full border border-stone-400 px-3 py-1 transition hover:bg-stone-900 hover:text-stone-50"
-              >
-                Sign In
-              </Link>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
         <nav
-          className={`flex flex-wrap items-center gap-2 border-t border-dashed border-stone-400 pt-4 text-sm font-semibold text-stone-700 transition-all duration-300 ${compact ? "max-h-0 overflow-hidden border-transparent pt-0 opacity-0" : "opacity-100"}`}
+          className={`flex flex-wrap items-center gap-2 text-sm font-semibold text-stone-700 transition-[max-height,opacity,padding,margin,border-color] duration-200 ${compact ? "mt-0 max-h-0 overflow-hidden border-transparent pt-0 opacity-0" : "mt-3 max-h-40 border-t border-dashed border-stone-400 pt-3 opacity-100"}`}
         >
           {categories.map((category) => (
             <Link

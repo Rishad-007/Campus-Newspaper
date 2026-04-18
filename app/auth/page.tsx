@@ -16,7 +16,9 @@ export default async function AuthPage() {
         ]}
       >
         <div className="lg:col-span-2 rounded-3xl border border-stone-300 bg-white p-6 text-sm text-stone-700 shadow-sm">
-          <p className="font-semibold text-stone-900">Supabase is not configured</p>
+          <p className="font-semibold text-stone-900">
+            Supabase is not configured
+          </p>
           <p className="mt-2 leading-7">
             The authentication demo depends on Supabase Auth. Once the public
             URL and anon key are available, reload this page to use the full

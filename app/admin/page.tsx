@@ -186,6 +186,9 @@ export default function AdminPage() {
   const [rejectReasonByStory, setRejectReasonByStory] = useState<
     Record<string, string>
   >({});
+  const [expandedPendingStoryById, setExpandedPendingStoryById] = useState<
+    Record<string, boolean>
+  >({});
 
   const [writerTitle, setWriterTitle] = useState("");
   const [writerExcerpt, setWriterExcerpt] = useState("");
@@ -1565,6 +1568,32 @@ export default function AdminPage() {
                 </div>
 
                 <p className="mt-2 text-sm text-stone-700">{story.excerpt}</p>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedPendingStoryById((previous) => ({
+                      ...previous,
+                      [story.id]: !previous[story.id],
+                    }))
+                  }
+                  className="mt-3 rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700"
+                >
+                  {expandedPendingStoryById[story.id]
+                    ? "Hide Full Article"
+                    : "Read Full Article"}
+                </button>
+
+                {expandedPendingStoryById[story.id] && (
+                  <div className="mt-3 rounded-xl border border-dashed border-stone-400 bg-stone-50 p-4">
+                    <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
+                      Full Article Content
+                    </p>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-7 text-stone-800">
+                      {story.body}
+                    </p>
+                  </div>
+                )}
 
                 <label className="mt-3 grid gap-2">
                   <span className="text-xs font-semibold tracking-widest text-stone-600 uppercase">

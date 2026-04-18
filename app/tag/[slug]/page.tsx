@@ -12,8 +12,22 @@ export default async function TagPage({ params }: TagPageProps) {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
       <header className="paper-surface rounded-2xl p-5 sm:p-6">
-        <Link href="/" className="text-sm font-semibold text-(--accent)">
-          Back to homepage
+        <Link
+          href="/"
+          aria-label="Back to homepage"
+          className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M3 11.5 12 4l9 7.5" />
+            <path d="M6.5 10.8V20h11v-9.2" />
+          </svg>
         </Link>
         <h1 className="font-display mt-3 text-3xl text-stone-900 sm:text-5xl">
           Tag: #{slug}
