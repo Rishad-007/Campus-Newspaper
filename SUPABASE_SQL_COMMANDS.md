@@ -1,275 +1,211 @@
-## Supabase SQL Commands
+# Supabase SQL Commands (Normalized)
 
-This file is the single place for all SQL commands used by this project.
+This file contains the full SQL setup for this project with normalized and connected tables.
 
-### 1) Full Database Setup (run once on a fresh Supabase project)
+## 1) Full Setup SQL (Fresh Database)
+
+Run everything from [supabase/schema.sql](supabase/schema.sql).
+
+## 2) Upgrade Existing Old Schema To Normalized
+
+Use this migration if your existing project still uses `articles.category` and `articles.tags`.
 
 ```sql
--- Roles and profile model
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  full_name text not null,
-  email text not null unique,
-  role text not null default 'writer' check (role in ('owner', 'editor', 'sub-editor', 'writer')),
-  requested_role text check (requested_role in ('writer', 'editor')),
-  access_request_status text not null default 'none' check (access_request_status in ('none', 'pending', 'rejected')),
-  access_request_updated_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+create extension if not exists pgcrypto;
 
--- News workflow model
-create table if not exists public.articles (
+create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
-  title text not null,
   slug text not null unique,
-  excerpt text not null,
-  body text not null,
-  category text not null,
-  tags text[] not null default '{}',
-  author_id uuid not null references public.profiles(id) on delete cascade,
-  status text not null default 'draft' check (status in ('draft', 'submitted', 'published')),
-  rejection_reason text,
-  placement text not null default 'none' check (placement in ('none', 'lead', 'brief', 'latest')),
-  published_at timestamptz,
+  name_en text not null unique,
+  name_bn text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.tags (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.article_tags (
+  article_id uuid not null references public.articles(id) on delete cascade,
+  tag_id uuid not null references public.tags(id) on delete cascade,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  primary key (article_id, tag_id)
 );
 
-create index if not exists idx_articles_status on public.articles(status);
-create index if not exists idx_articles_author_id on public.articles(author_id);
-create index if not exists idx_articles_created_at on public.articles(created_at desc);
+insert into public.categories (slug, name_en, name_bn)
+values
+  ('city', 'City', 'সিটি'),
+  ('sports', 'Sports', 'খেলা'),
+  ('health', 'Health', 'স্বাস্থ্য'),
+  ('education', 'Education', 'শিক্ষা'),
+  ('economy', 'Economy', 'অর্থনীতি')
+on conflict (slug) do nothing;
 
-create or replace function public.set_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
+alter table public.articles
+  add column if not exists category_id uuid,
+  add column if not exists locale text,
+  add column if not exists hero_image_url text;
 
-create trigger trg_profiles_updated_at
-before update on public.profiles
-for each row execute function public.set_updated_at();
+update public.articles
+set locale = coalesce(locale, 'en');
 
-create trigger trg_articles_updated_at
-before update on public.articles
-for each row execute function public.set_updated_at();
+update public.articles
+set hero_image_url = coalesce(hero_image_url, '/newsroom.jpg');
 
-create or replace function public.current_user_role()
-returns text
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select role from public.profiles where id = auth.uid();
-$$;
+alter table public.articles
+  alter column locale set default 'en',
+  alter column locale set not null;
 
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  assigned_role text;
-begin
-  if exists (select 1 from public.profiles limit 1) then
-    assigned_role := 'writer';
-  else
-    assigned_role := 'owner';
-  end if;
+alter table public.articles
+  drop constraint if exists articles_locale_check;
 
-  insert into public.profiles (id, full_name, email, role)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
-    new.email,
-    assigned_role
-  )
-  on conflict (id) do nothing;
+alter table public.articles
+  add constraint articles_locale_check
+  check (locale in ('en', 'bn'));
 
-  return new;
-end;
-$$;
+update public.articles a
+set category_id = c.id
+from public.categories c
+where c.slug = lower(a.category)
+  and a.category_id is null;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-after insert on auth.users
-for each row execute function public.handle_new_user();
+update public.articles a
+set category_id = c.id
+from public.categories c
+where a.category_id is null
+  and c.slug = 'city';
 
-alter table public.profiles enable row level security;
-alter table public.articles enable row level security;
+alter table public.articles
+  alter column category_id set not null;
 
--- Profiles policies
-drop policy if exists "profiles_select_authenticated" on public.profiles;
-create policy "profiles_select_authenticated"
-on public.profiles
+alter table public.articles
+  add constraint articles_category_id_fkey
+  foreign key (category_id) references public.categories(id) on delete restrict;
+
+insert into public.tags (slug, name)
+select distinct lower(trim(tag_item)), lower(trim(tag_item))
+from public.articles,
+unnest(coalesce(tags, '{}'::text[])) as tag_item
+where trim(tag_item) <> ''
+on conflict (slug) do nothing;
+
+insert into public.article_tags (article_id, tag_id)
+select a.id, t.id
+from public.articles a,
+unnest(coalesce(a.tags, '{}'::text[])) as tag_item
+join public.tags t
+  on t.slug = lower(trim(tag_item))
+where trim(tag_item) <> ''
+on conflict do nothing;
+
+alter table public.articles
+  drop column if exists category,
+  drop column if exists tags;
+```
+
+## 3) Verification Queries
+
+```sql
+select id, slug, name_en, name_bn from public.categories order by name_en;
+
+select id, slug, name from public.tags order by slug;
+
+select a.id, a.title, a.slug, c.slug as category_slug, p.full_name as author
+from public.articles a
+join public.categories c on c.id = a.category_id
+join public.profiles p on p.id = a.author_id
+order by a.updated_at desc;
+
+select a.slug as article_slug, t.slug as tag_slug
+from public.article_tags at
+join public.articles a on a.id = at.article_id
+join public.tags t on t.id = at.tag_id
+order by a.slug, t.slug;
+```
+
+## 4) Optional Cleanup (Duplicate Tags)
+
+```sql
+-- Example: merge 'ai-news' into 'ai'
+with old_tag as (
+  select id from public.tags where slug = 'ai-news'
+),
+new_tag as (
+  select id from public.tags where slug = 'ai'
+)
+insert into public.article_tags (article_id, tag_id)
+select at.article_id, n.id
+from public.article_tags at
+cross join new_tag n
+where at.tag_id = (select id from old_tag)
+on conflict do nothing;
+
+delete from public.article_tags where tag_id = (select id from old_tag);
+delete from public.tags where id = (select id from old_tag);
+```
+
+## 5) Storage Setup For Story Images
+
+```sql
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'article-images',
+  'article-images',
+  true,
+  524288,
+  array['image/webp', 'image/jpeg', 'image/png']
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "article_images_public_read" on storage.objects;
+create policy "article_images_public_read"
+on storage.objects
 for select
-to authenticated
-using (true);
+to anon, authenticated
+using (bucket_id = 'article-images');
 
-drop policy if exists "profiles_insert_self" on public.profiles;
-create policy "profiles_insert_self"
-on public.profiles
+drop policy if exists "article_images_authenticated_upload" on storage.objects;
+create policy "article_images_authenticated_upload"
+on storage.objects
 for insert
 to authenticated
-with check (auth.uid() = id);
-
-drop policy if exists "profiles_update_self_or_owner" on public.profiles;
-create policy "profiles_update_self_or_owner"
-on public.profiles
-for update
-to authenticated
-using (auth.uid() = id or public.current_user_role() = 'owner')
 with check (
-  (
-    auth.uid() = id
-    and role = (select p.role from public.profiles p where p.id = auth.uid())
-  )
-  or public.current_user_role() = 'owner'
+  bucket_id = 'article-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Articles policies
-drop policy if exists "articles_public_read_published" on public.articles;
-create policy "articles_public_read_published"
-on public.articles
-for select
-to anon
-using (status = 'published');
-
-drop policy if exists "articles_auth_read_scoped" on public.articles;
-create policy "articles_auth_read_scoped"
-on public.articles
-for select
-to authenticated
-using (
-  status = 'published'
-  or author_id = auth.uid()
-  or public.current_user_role() in ('owner', 'editor', 'sub-editor')
-);
-
-drop policy if exists "articles_insert_writer_or_owner" on public.articles;
-create policy "articles_insert_writer_or_owner"
-on public.articles
-for insert
-to authenticated
-with check (
-  author_id = auth.uid()
-  and public.current_user_role() in ('writer', 'owner')
-);
-
-drop policy if exists "articles_update_owner_editor_or_author" on public.articles;
-create policy "articles_update_owner_editor_or_author"
-on public.articles
+drop policy if exists "article_images_owner_update" on storage.objects;
+create policy "article_images_owner_update"
+on storage.objects
 for update
 to authenticated
 using (
-  author_id = auth.uid()
-  or public.current_user_role() in ('owner', 'editor', 'sub-editor')
+  bucket_id = 'article-images'
+  and owner = auth.uid()
 )
 with check (
-  author_id = auth.uid()
-  or public.current_user_role() in ('owner', 'editor', 'sub-editor')
+  bucket_id = 'article-images'
+  and owner = auth.uid()
 );
 
-drop policy if exists "articles_delete_owner_editor_or_author" on public.articles;
-create policy "articles_delete_owner_editor_or_author"
-on public.articles
+drop policy if exists "article_images_owner_delete" on storage.objects;
+create policy "article_images_owner_delete"
+on storage.objects
 for delete
 to authenticated
 using (
-  author_id = auth.uid()
-  or public.current_user_role() in ('owner', 'editor', 'sub-editor')
+  bucket_id = 'article-images'
+  and owner = auth.uid()
 );
-```
 
-### 2) Patch Only (if you already had old trigger/policy and only need owner-first fix)
-
-```sql
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  assigned_role text;
-begin
-  if exists (select 1 from public.profiles limit 1) then
-    assigned_role := 'writer';
-  else
-    assigned_role := 'owner';
-  end if;
-
-  insert into public.profiles (id, full_name, email, role)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
-    new.email,
-    assigned_role
-  )
-  on conflict (id) do nothing;
-
-  return new;
-end;
-$$;
-
-drop policy if exists "profiles_update_self_or_owner" on public.profiles;
-create policy "profiles_update_self_or_owner"
-on public.profiles
-for update
-to authenticated
-using (auth.uid() = id or public.current_user_role() = 'owner')
-with check (
-  (
-    auth.uid() = id
-    and role = (select p.role from public.profiles p where p.id = auth.uid())
-  )
-  or public.current_user_role() = 'owner'
-);
-```
-
-### 3) Verification Queries
-
-```sql
--- Check profile roles and owner-first behavior
-select id, full_name, email, role, requested_role, access_request_status, access_request_updated_at, created_at
-from public.profiles
-order by created_at asc;
-
--- Check article workflow records
-select id, title, status, placement, author_id, updated_at
-from public.articles
-order by updated_at desc;
-```
-
-### 4) Patch Existing Database For Access Requests
-
-```sql
-alter table public.profiles
-  add column if not exists requested_role text;
-
-alter table public.profiles
-  add column if not exists access_request_status text not null default 'none';
-
-alter table public.profiles
-  add column if not exists access_request_updated_at timestamptz;
-
-alter table public.profiles
-  drop constraint if exists profiles_requested_role_check;
-
-alter table public.profiles
-  add constraint profiles_requested_role_check
-  check (requested_role in ('writer', 'editor'));
-
-alter table public.profiles
-  drop constraint if exists profiles_access_request_status_check;
-
-alter table public.profiles
-  add constraint profiles_access_request_status_check
-  check (access_request_status in ('none', 'pending', 'rejected'));
+select id, name, public, file_size_limit
+from storage.buckets
+where id = 'article-images';
 ```

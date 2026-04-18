@@ -24,7 +24,9 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
   const [requestStatus, setRequestStatus] = useState<
     "none" | "pending" | "rejected"
   >("none");
-  const [requestedRole, setRequestedRole] = useState<RequestedRole | null>(null);
+  const [requestedRole, setRequestedRole] = useState<RequestedRole | null>(
+    null,
+  );
 
   async function loadRequestState(userId: string | null) {
     if (!userId) {
@@ -215,7 +217,11 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
             {mode === "signup" ? "Create account" : "Sign in"}
           </button>
           {status && (
-            <p className="mt-4 text-sm text-stone-700" role="status" aria-live="polite">
+            <p
+              className="mt-4 text-sm text-stone-700"
+              role="status"
+              aria-live="polite"
+            >
               {status}
             </p>
           )}

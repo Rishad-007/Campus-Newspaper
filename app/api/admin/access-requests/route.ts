@@ -95,7 +95,10 @@ export async function PATCH(request: Request) {
       .eq("id", userId);
 
     if (approveError) {
-      return NextResponse.json({ error: approveError.message }, { status: 400 });
+      return NextResponse.json(
+        { error: approveError.message },
+        { status: 400 },
+      );
     }
 
     return NextResponse.json({ ok: true, status: "approved" });

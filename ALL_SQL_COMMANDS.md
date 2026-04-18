@@ -1,3 +1,6 @@
+# All SQL Commands
+
+```sql
 create extension if not exists pgcrypto;
 
 -- -----------------------------
@@ -409,3 +412,4 @@ using (
   bucket_id = 'article-images'
   and owner = auth.uid()
 );
+```

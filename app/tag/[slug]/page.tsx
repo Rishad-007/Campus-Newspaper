@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getArticlesByTag } from "@/lib/mock-news";
+import { getPublicStoriesByTagSlug } from "@/lib/news-service";
 
 type TagPageProps = {
   params: Promise<{ slug: string }>;
@@ -7,12 +7,12 @@ type TagPageProps = {
 
 export default async function TagPage({ params }: TagPageProps) {
   const { slug } = await params;
-  const stories = getArticlesByTag(slug);
+  const stories = await getPublicStoriesByTagSlug(slug);
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
       <header className="paper-surface rounded-2xl p-5 sm:p-6">
-        <Link href="/" className="text-sm font-semibold text-[var(--accent)]">
+        <Link href="/" className="text-sm font-semibold text-(--accent)">
           Back to homepage
         </Link>
         <h1 className="font-display mt-3 text-3xl text-stone-900 sm:text-5xl">
@@ -33,9 +33,9 @@ export default async function TagPage({ params }: TagPageProps) {
             {stories.map((story) => (
               <article
                 key={story.id}
-                className="rounded-xl border border-stone-300 bg-[var(--surface)] p-4"
+                className="rounded-xl border border-stone-300 bg-(--surface) p-4"
               >
-                <p className="text-xs font-semibold tracking-[0.12em] text-[var(--accent-2)] uppercase">
+                <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
                   {story.categoryLabel}
                 </p>
                 <h2 className="font-display mt-2 text-2xl leading-tight text-stone-900">
@@ -48,7 +48,7 @@ export default async function TagPage({ params }: TagPageProps) {
                 </p>
                 <Link
                   href={`/news/${story.slug}`}
-                  className="mt-3 inline-block text-sm font-semibold text-[var(--accent)]"
+                  className="mt-3 inline-block text-sm font-semibold text-(--accent)"
                 >
                   Read full story
                 </Link>

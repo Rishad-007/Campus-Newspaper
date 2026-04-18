@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrintShareActions } from "@/components/print-share-actions";
-import { getArticleBySlug, getPublishedArticles } from "@/lib/mock-news";
+import { getPublicStories, getPublicStoryBySlug } from "@/lib/news-service";
 
 type NewsPageProps = {
   params: Promise<{ slug: string }>;
@@ -10,15 +10,16 @@ type NewsPageProps = {
 
 export default async function NewsArticlePage({ params }: NewsPageProps) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getPublicStoryBySlug(slug);
 
   if (!article) {
     notFound();
   }
 
-  const related = getPublishedArticles()
+  const related = (await getPublicStories())
     .filter((item) => item.slug !== article.slug)
     .slice(0, 3);
+  const excerptInsertIndex = Math.floor(article.body.length / 2);
   const publishedAt = new Date(article.publishedAt);
   const publishDateLabel = new Intl.DateTimeFormat(
     article.locale === "bn" ? "bn-BD" : "en-GB",
@@ -95,13 +96,20 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
           </div>
 
           <div className="article-body-print mt-6 space-y-5 text-lg leading-9 text-stone-800">
-            {article.body.map((paragraph) => (
-              <p
-                key={paragraph}
-                className={article.locale === "bn" ? "font-bangla" : ""}
+            {article.body.map((paragraph, index) => (
+              <div
+                key={`${article.id}-${index.toString()}`}
+                className="space-y-5"
               >
-                {paragraph}
-              </p>
+                {index === excerptInsertIndex && article.excerpt && (
+                  <blockquote className="rounded-xl border-l-4 border-(--accent) bg-stone-100 px-4 py-3 text-base leading-7 text-stone-900 sm:text-lg">
+                    {article.excerpt}
+                  </blockquote>
+                )}
+                <p className={article.locale === "bn" ? "font-bangla" : ""}>
+                  {paragraph}
+                </p>
+              </div>
             ))}
           </div>
 
