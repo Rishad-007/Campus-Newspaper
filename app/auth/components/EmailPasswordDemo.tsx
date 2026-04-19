@@ -110,6 +110,10 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
       ? "Check your inbox to confirm the new account."
       : authStatus === "signin_ok"
         ? "Signed in successfully. Open Admin Desk from header."
+        : authStatus === "email_not_confirmed"
+          ? "Email is not confirmed yet. Open your inbox and confirm first."
+          : authStatus === "rate_limited"
+            ? "Too many attempts. Please wait a minute and try again."
         : authStatus === "invalid_credentials"
           ? "Invalid email or password."
           : authStatus === "signup_failed"
@@ -195,6 +199,10 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none"
                 placeholder="you@email.com"
               />
@@ -208,6 +216,10 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
                 onChange={(event) => setPassword(event.target.value)}
                 required
                 minLength={8}
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none"
                 placeholder="At least 8 characters"
               />
