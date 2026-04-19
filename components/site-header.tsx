@@ -154,6 +154,13 @@ export function SiteHeader() {
             </p>
 
             <div className="flex items-center gap-2 lg:hidden">
+              <Link
+                href="/news"
+                onClick={() => setMenuOpen(false)}
+                className="inline-flex min-h-9 items-center rounded-full border border-stone-500 bg-stone-50 px-2.5 py-1.5 text-[11px] font-semibold text-stone-900 shadow-sm transition hover:bg-stone-100"
+              >
+                All News
+              </Link>
               {supabase && isAuthenticated ? (
                 <Link
                   href="/admin"
@@ -166,7 +173,7 @@ export function SiteHeader() {
                 <Link
                   href="/auth"
                   onClick={() => setMenuOpen(false)}
-                  className="inline-flex min-h-9 items-center rounded-full border border-stone-400 bg-stone-900 px-2.5 py-1.5 text-[11px] font-semibold text-stone-50 transition hover:bg-stone-700"
+                  className="inline-flex min-h-9 items-center rounded-full border border-stone-500 bg-stone-50 px-2.5 py-1.5 text-[11px] font-semibold text-stone-900 shadow-sm transition hover:bg-stone-100"
                 >
                   Sign In
                 </Link>
@@ -184,6 +191,12 @@ export function SiteHeader() {
             </div>
 
             <div className="hidden items-center justify-end gap-2 text-xs font-semibold lg:flex">
+              <Link
+                href="/news"
+                className="inline-flex min-h-10 items-center rounded-full border border-stone-500 bg-stone-50 px-4 py-2 text-stone-900 shadow-sm transition hover:bg-stone-100"
+              >
+                Visit All News
+              </Link>
               {supabase && isAuthenticated ? (
                 <>
                   <Link
@@ -204,7 +217,7 @@ export function SiteHeader() {
               ) : (
                 <Link
                   href="/auth"
-                  className="inline-flex min-h-10 items-center rounded-full border border-stone-400 px-4 py-2 transition hover:bg-stone-900 hover:text-stone-50"
+                  className="inline-flex min-h-10 items-center rounded-full border border-stone-500 bg-stone-50 px-4 py-2 text-stone-900 shadow-sm transition hover:bg-stone-100"
                 >
                   Sign In
                 </Link>
@@ -244,6 +257,13 @@ export function SiteHeader() {
             </div>
 
             <nav className="grid grid-cols-2 gap-1.5 text-[11px] font-semibold text-stone-700">
+              <Link
+                href="/news"
+                onClick={() => setMenuOpen(false)}
+                className="col-span-2 inline-flex min-h-9 items-center justify-center rounded-full border border-stone-500 bg-stone-50 px-2.5 py-1.5 text-center text-stone-900 shadow-sm transition hover:bg-stone-100"
+              >
+                Visit All News
+              </Link>
               {categories.map((category) => (
                 <Link
                   key={category.slug}

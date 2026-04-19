@@ -172,11 +172,11 @@ export default async function AllNewsPage({
             No stories found for this filter combination.
           </div>
         ) : (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             {filteredStories.map((story) => (
               <article
                 key={story.id}
-                className="rounded-xl border border-stone-300 bg-(--surface) p-4"
+                className="rounded-xl border border-stone-300 bg-(--surface) p-2.5 shadow-sm sm:p-3"
               >
                 <div className="overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
                   <Image
@@ -184,16 +184,16 @@ export default async function AllNewsPage({
                     alt={story.title}
                     width={640}
                     height={360}
-                    className="h-36 w-full object-cover"
+                    className="h-24 w-full object-cover sm:h-28"
                   />
                 </div>
-                <p className="mt-3 text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
+                <p className="mt-2 text-[10px] font-semibold tracking-widest text-(--accent-2) uppercase sm:text-xs sm:tracking-[0.12em]">
                   {story.categoryLabel}
                 </p>
-                <h3 className="font-display mt-1 text-2xl leading-tight text-stone-900">
+                <h3 className="font-display mt-1 line-clamp-2 text-lg leading-tight text-stone-900 sm:text-xl">
                   {story.title}
                 </h3>
-                <p className="mt-2 text-sm text-stone-600">
+                <p className="mt-1 text-[11px] text-stone-600 sm:text-xs">
                   {new Date(story.publishedAt).toLocaleDateString("en-GB", {
                     day: "2-digit",
                     month: "short",
@@ -201,13 +201,13 @@ export default async function AllNewsPage({
                   })}
                 </p>
                 <p
-                  className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 line-clamp-3 text-sm leading-6 text-stone-700`}
+                  className={`${story.locale === "bn" ? "font-bangla" : ""} mt-1 line-clamp-2 text-xs leading-5 text-stone-700 sm:mt-2 sm:line-clamp-3 sm:text-sm sm:leading-6`}
                 >
                   {story.excerpt}
                 </p>
                 <Link
                   href={`/news/${story.slug}`}
-                  className="mt-3 inline-block text-sm font-semibold text-(--accent)"
+                  className="mt-2 inline-block text-xs font-semibold text-(--accent) sm:mt-3 sm:text-sm"
                 >
                   Open story
                 </Link>

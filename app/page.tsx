@@ -132,15 +132,15 @@ export default async function Home() {
           <h3 className="font-display text-2xl text-stone-900 sm:text-3xl">
             Latest Reports
           </h3>
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             <p className="text-sm text-stone-600">
               Responsive cards for mobile, tablet, and desktop
             </p>
             <Link
               href="/news"
-              className="inline-flex min-h-10 items-center rounded-full border border-stone-400 px-4 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-(--accent) bg-(--accent) px-4 py-2 text-sm font-semibold text-white transition hover:brightness-150 sm:min-h-10 sm:w-auto"
             >
-              Browse All News
+              Visit All News
             </Link>
           </div>
         </div>

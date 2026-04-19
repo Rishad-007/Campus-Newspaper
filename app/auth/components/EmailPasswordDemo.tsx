@@ -17,7 +17,7 @@ type Mode = "signup" | "signin";
 export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
   const searchParams = useSearchParams();
   const mode: Mode =
-    searchParams.get("mode") === "signin" ? "signin" : "signup";
+    searchParams.get("mode") === "signup" ? "signup" : "signin";
   const authStatus = searchParams.get("auth");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -114,13 +114,13 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
           ? "Email is not confirmed yet. Open your inbox and confirm first."
           : authStatus === "rate_limited"
             ? "Too many attempts. Please wait a minute and try again."
-        : authStatus === "invalid_credentials"
-          ? "Invalid email or password."
-          : authStatus === "signup_failed"
-            ? "Sign up failed. Please try again."
-            : authStatus === "signin_failed"
-              ? "Sign in failed. Please try again."
-              : "";
+            : authStatus === "invalid_credentials"
+              ? "Invalid email or password."
+              : authStatus === "signup_failed"
+                ? "Sign up failed. Please try again."
+                : authStatus === "signin_failed"
+                  ? "Sign in failed. Please try again."
+                  : "";
 
   return (
     <AuthDemoPage
@@ -134,23 +134,43 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
     >
       {!currentUser ? (
         <form
-          className="paper-surface rounded-2xl border border-stone-300 p-6 text-stone-900 shadow-sm sm:p-7 lg:col-span-2"
+          className="paper-surface rounded-2xl border border-stone-300 p-5 text-stone-900 shadow-sm sm:p-7 lg:col-span-2"
           method="post"
           action={mode === "signup" ? "/api/auth/signup" : "/api/auth/signin"}
         >
-          <div className="flex items-center justify-between text-[11px] font-semibold tracking-[0.18em] text-stone-600 uppercase">
-            <span>Primary Flow</span>
-            <span>Daily Darpan</span>
+          <div className="rounded-xl border border-stone-300 bg-white/80 p-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/auth?mode=signin"
+                className={`inline-flex min-h-10 items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold shadow-sm transition ${
+                  mode === "signin"
+                    ? "border-stone-900 bg-linear-to-b from-stone-900 to-stone-800 text-stone-50! shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+                    : "border-stone-300 bg-linear-to-b from-white to-stone-100 text-stone-800! hover:from-stone-50 hover:to-stone-200"
+                }`}
+              >
+                Log In
+              </Link>
+              <Link
+                href="/auth?mode=signup"
+                className={`inline-flex min-h-10 items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold shadow-sm transition ${
+                  mode === "signup"
+                    ? "border-stone-900 bg-linear-to-b from-stone-900 to-stone-800 text-stone-50! shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+                    : "border-stone-300 bg-linear-to-b from-white to-stone-100 text-stone-800! hover:from-stone-50 hover:to-stone-200"
+                }`}
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
-          <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs tracking-[0.2em] text-stone-600 uppercase">
-                Credentials
+              <p className="text-xs font-semibold tracking-[0.16em] text-stone-600 uppercase">
+                Primary Flow
               </p>
-              <h3 className="font-display text-2xl text-stone-900">
+              <h3 className="font-display mt-1 text-2xl text-stone-900 sm:text-3xl">
                 {mode === "signup" ? "Create an account" : "Welcome back"}
               </h3>
-              <p className="mt-2 text-sm text-stone-700">
+              <p className="mt-2 text-sm leading-6 text-stone-700">
                 {mode === "signup" ? (
                   <>
                     If you already signed up, then{" "}
@@ -186,7 +206,7 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
                   name="full_name"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none sm:text-base"
                   placeholder="Your full name"
                 />
               </label>
@@ -203,7 +223,7 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none"
+                className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none sm:text-base"
                 placeholder="you@email.com"
               />
             </label>
@@ -216,11 +236,13 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
                 onChange={(event) => setPassword(event.target.value)}
                 required
                 minLength={8}
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                autoComplete={
+                  mode === "signin" ? "current-password" : "new-password"
+                }
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-base text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none"
+                className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none sm:text-base"
                 placeholder="At least 8 characters"
               />
             </label>
