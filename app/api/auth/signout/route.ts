@@ -6,11 +6,15 @@ function redirectToHome(origin: string) {
   return NextResponse.redirect(`${origin}/?auth=signout_ok`);
 }
 
+function redirectToHomeAfterPost(origin: string) {
+  return NextResponse.redirect(`${origin}/?auth=signout_ok`, 303);
+}
+
 export async function POST(request: Request) {
   const origin = getRequestOrigin(request);
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  return redirectToHome(origin);
+  return redirectToHomeAfterPost(origin);
 }
 
 export async function GET(request: Request) {

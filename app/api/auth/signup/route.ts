@@ -13,6 +13,7 @@ export async function POST(request: Request) {
   if (!email || !password) {
     return NextResponse.redirect(
       `${origin}/auth?mode=signup&auth=signup_failed`,
+      303,
     );
   }
 
@@ -31,8 +32,9 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.redirect(
       `${origin}/auth?mode=signup&auth=signup_failed`,
+      303,
     );
   }
 
-  return NextResponse.redirect(`${origin}/auth?mode=signin&auth=signup_ok`);
+  return NextResponse.redirect(`${origin}/auth?mode=signin&auth=signup_ok`, 303);
 }

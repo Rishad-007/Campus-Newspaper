@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   if (!email || !password) {
     return NextResponse.redirect(
       `${origin}/auth?mode=signin&auth=invalid_credentials`,
+      303,
     );
   }
 
@@ -21,8 +22,9 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.redirect(
       `${origin}/auth?mode=signin&auth=invalid_credentials`,
+      303,
     );
   }
 
-  return NextResponse.redirect(`${origin}/admin?auth=signin_ok`);
+  return NextResponse.redirect(`${origin}/admin?auth=signin_ok`, 303);
 }

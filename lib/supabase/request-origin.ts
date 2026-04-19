@@ -13,17 +13,17 @@ function getConfiguredAppOrigin() {
 }
 
 export function getRequestOrigin(request: Request) {
-  const configuredOrigin = getConfiguredAppOrigin();
-  if (configuredOrigin) {
-    return configuredOrigin;
-  }
-
   const forwardedHost = request.headers.get("x-forwarded-host");
   const host = forwardedHost ?? request.headers.get("host");
   const protocol = request.headers.get("x-forwarded-proto") ?? "https";
 
   if (host) {
     return `${protocol}://${host}`;
+  }
+
+  const configuredOrigin = getConfiguredAppOrigin();
+  if (configuredOrigin) {
+    return configuredOrigin;
   }
 
   return new URL(request.url).origin;
