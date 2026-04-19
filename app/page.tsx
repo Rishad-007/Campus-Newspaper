@@ -72,7 +72,7 @@ export default async function Home() {
 
             <Link
               href={`/news/${leadStory.slug}`}
-              className="mt-6 inline-flex items-center rounded-full bg-stone-900 px-5 py-2 text-sm font-semibold text-stone-100 transition hover:bg-stone-700"
+              className="mt-6 inline-flex items-center rounded-full bg-(--accent) px-5 py-2 text-sm font-semibold text-white! shadow-sm transition hover:brightness-110 hover:text-white!"
             >
               Read full report
             </Link>
