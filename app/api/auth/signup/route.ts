@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { getRequestOrigin } from "@/lib/supabase/request-origin";
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  const origin = new URL(request.url).origin;
+  const origin = getRequestOrigin(request);
 
   if (!email || !password) {
     return NextResponse.redirect(

@@ -118,12 +118,14 @@ Create `.env.local` and set:
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+APP_URL=http://localhost:3000
 ```
 
 Notes:
 
 - `NEXT_PUBLIC_*` values are required for browser + SSR clients.
 - `SUPABASE_SERVICE_ROLE_KEY` is required for server admin endpoints.
+- `APP_URL` is used for auth redirects and email callbacks (set this to your deployed Vercel URL in production).
 - Never expose service role key in browser code.
 
 ### 5.4 Database bootstrap
