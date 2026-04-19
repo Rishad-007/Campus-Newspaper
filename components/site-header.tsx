@@ -65,12 +65,22 @@ export function SiteHeader() {
   }, []);
 
   useEffect(() => {
-    const compactEnterThreshold = 200;
-    const compactExitThreshold = 24;
     let ticking = false;
 
+    const getScrollTop = () =>
+      Math.max(
+        window.scrollY,
+        window.pageYOffset,
+        document.documentElement.scrollTop,
+        document.body.scrollTop,
+        0,
+      );
+
     const updateCompact = () => {
-      const currentScrollY = window.scrollY;
+      const currentScrollY = getScrollTop();
+      const isSmallScreen = window.matchMedia("(max-width: 640px)").matches;
+      const compactEnterThreshold = isSmallScreen ? 1 : 180;
+      const compactExitThreshold = isSmallScreen ? 0 : 24;
 
       setCompact((previous) => {
         if (previous) {
@@ -95,8 +105,16 @@ export function SiteHeader() {
 
     updateCompact();
     window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("touchmove", onScroll, { passive: true });
+    window.addEventListener("resize", updateCompact);
 
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("scroll", onScroll);
+      window.removeEventListener("touchmove", onScroll);
+      window.removeEventListener("resize", updateCompact);
+    };
   }, []);
 
   useEffect(() => {
@@ -154,21 +172,32 @@ export function SiteHeader() {
   return (
     <header className="paper-surface print-hidden sticky top-0 z-50 border-b border-dashed border-stone-400/90 bg-[rgba(255,253,248,0.96)] backdrop-blur-sm">
       <div
-        className={`mx-auto w-full max-w-6xl px-4 transition-[padding] duration-200 sm:px-6 lg:px-8 ${compact ? "py-2" : "py-3 sm:py-4"}`}
+        className={`mx-auto w-full max-w-6xl px-4 transition-[padding] duration-200 sm:px-6 lg:px-8 ${compact ? "py-1.5 sm:py-2" : "py-2 sm:py-4"}`}
       >
         <div className="flex items-start justify-between gap-3 sm:gap-4">
           <div className="min-w-0">
-            <p className="text-[10px] tracking-[0.16em] text-stone-600 uppercase sm:text-xs">
+            <p className="hidden text-[10px] tracking-[0.16em] text-stone-600 uppercase sm:block sm:text-xs">
               Daily Edition • Bangladesh • Trusted Local Reporting
             </p>
             <Link
               href="/"
-              className={`font-display mt-2 inline-block font-bold tracking-wide text-stone-900 transition-all duration-200 ${compact ? "text-2xl sm:text-3xl" : "text-4xl sm:text-6xl"}`}
+              className={`font-display inline-flex items-center gap-2 font-bold tracking-wide text-stone-900 transition-all duration-200 ${compact ? "text-xl sm:text-3xl" : "text-3xl sm:text-6xl"}`}
             >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className={`${compact ? "h-5 w-5" : "h-6 w-6 sm:h-8 sm:w-8"}`}
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
               Daily Darpan
             </Link>
             <p
-              className={`tracking-[0.08em] text-stone-600 uppercase transition-[max-height,opacity,margin] duration-200 ${compact ? "mt-0 max-h-0 overflow-hidden text-[10px] opacity-0" : "mt-2 max-h-8 text-xs opacity-100 sm:text-sm"}`}
+              className={`hidden tracking-[0.08em] text-stone-600 uppercase transition-[max-height,opacity,margin] duration-200 sm:block ${compact ? "mt-0 max-h-0 overflow-hidden text-[10px] opacity-0" : "mt-2 max-h-8 text-xs opacity-100 sm:text-sm"}`}
             >
               The bilingual digital newspaper
             </p>
