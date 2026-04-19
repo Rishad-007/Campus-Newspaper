@@ -1,16 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AutoPrintTrigger } from "@/components/auto-print-trigger";
 import { CreatePhotocardAction } from "@/components/create-photocard-action";
 import { PrintShareActions } from "@/components/print-share-actions";
 import { getPublicStories, getPublicStoryBySlug } from "@/lib/news-service";
 
 type NewsPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ print?: string }>;
 };
 
-export default async function NewsArticlePage({ params }: NewsPageProps) {
+export default async function NewsArticlePage({
+  params,
+  searchParams,
+}: NewsPageProps) {
   const { slug } = await params;
+  const query = await searchParams;
+  const shouldAutoPrint = query.print === "1";
   const article = await getPublicStoryBySlug(slug);
 
   if (!article) {
@@ -38,14 +45,16 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
       hour12: true,
     },
   ).format(publishedAt);
+  const printUrl = `/news/${article.slug}?print=1`;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
+      <AutoPrintTrigger enabled={shouldAutoPrint} />
       <header className="paper-surface rounded-2xl p-5 print-hidden sm:p-6">
         <Link
           href="/"
           aria-label="Back to homepage"
-          className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+          className="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50 sm:h-10 sm:w-10"
         >
           <svg
             viewBox="0 0 24 24"
@@ -61,7 +70,7 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
         </Link>
       </header>
 
-      <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <section className="grid gap-5 lg:grid-cols-[2fr_1fr] lg:gap-6">
         <article className="article-print paper-surface rounded-2xl p-5 sm:p-8">
           <div className="print-masthead hidden">
             <div className="print-brand-row">
@@ -91,7 +100,7 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
           <p className="text-xs font-semibold tracking-[0.14em] text-(--accent-2) uppercase">
             {article.categoryLabel}
           </p>
-          <h1 className="article-print-title font-display mt-3 text-3xl leading-tight text-stone-900 sm:text-5xl">
+          <h1 className="article-print-title font-display mt-3 text-2xl leading-tight text-stone-900 sm:text-5xl">
             {article.title}
           </h1>
           <p className="article-print-meta mt-4 text-sm text-stone-600">
@@ -105,12 +114,12 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
               alt={article.title}
               width={1200}
               height={700}
-              className="h-auto w-full"
+              className="h-64 w-full object-cover sm:h-auto"
               priority
             />
           </div>
 
-          <div className="article-body-print mt-6 space-y-5 text-lg leading-9 text-stone-800">
+          <div className="article-body-print mt-6 space-y-4 text-base leading-8 text-stone-800 sm:space-y-5 sm:text-lg sm:leading-9">
             {article.body.map((paragraph, index) => (
               <div
                 key={`${article.id}-${index.toString()}`}
@@ -121,14 +130,16 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
                     {article.excerpt}
                   </blockquote>
                 )}
-                <p className={article.locale === "bn" ? "font-bangla" : ""}>
+                <p
+                  className={`${article.locale === "bn" ? "font-bangla" : ""} ${index === 0 ? "lead-paragraph" : ""}`}
+                >
                   {paragraph}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="mt-8 border-t border-dashed border-stone-400 pt-4">
+          <div className="print-hidden mt-8 border-t border-dashed border-stone-400 pt-4">
             <p className="text-sm font-semibold text-stone-700">Tags</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {article.tags.map((tag) => (
@@ -144,9 +155,9 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
           </div>
         </article>
 
-        <aside className="space-y-4">
+        <aside className="order-first space-y-4 lg:order-last">
           <CreatePhotocardAction article={article} />
-          <PrintShareActions title={article.title} />
+          <PrintShareActions title={article.title} printUrl={printUrl} />
 
           <section className="paper-surface rounded-2xl p-4 print-hidden sm:p-5">
             <h2 className="font-display text-2xl text-stone-900">

@@ -2,12 +2,12 @@ import Link from "next/link";
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
       <header className="paper-surface rounded-2xl p-5 sm:p-6">
         <p className="text-xs font-semibold tracking-[0.14em] text-stone-600 uppercase">
           Legal Document
         </p>
-        <h1 className="font-display mt-2 text-3xl text-stone-900 sm:text-5xl">
+        <h1 className="font-display mt-2 text-2xl text-stone-900 sm:text-5xl">
           Privacy Policy & Legal Disclaimer
         </h1>
         <p className="mt-2 text-sm text-stone-700">
@@ -232,7 +232,7 @@ export default function PrivacyPolicyPage() {
         <div className="pt-2">
           <Link
             href="/"
-            className="inline-flex items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+            className="inline-flex min-h-11 items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50 sm:min-h-10"
           >
             Back to homepage
           </Link>

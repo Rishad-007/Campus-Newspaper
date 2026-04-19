@@ -340,14 +340,12 @@ export default function AdminPage() {
         .order("created_at", { ascending: true });
 
       profiles = (fallbackProfilesResult.data ?? []).map(
-        (
-          profile: Pick<ProfileRow, "id" | "full_name" | "email" | "role">,
-        ) => ({
-        ...profile,
-        requested_role: null,
-        access_request_status: "none",
-        access_request_updated_at: null,
-      }),
+        (profile: Pick<ProfileRow, "id" | "full_name" | "email" | "role">) => ({
+          ...profile,
+          requested_role: null,
+          access_request_status: "none",
+          access_request_updated_at: null,
+        }),
       );
       profilesError = fallbackProfilesResult.error;
     } else {
@@ -1272,7 +1270,7 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
         <section className="paper-surface rounded-2xl p-6">
           <h1 className="font-display text-3xl text-stone-900">Admin Desk</h1>
           <p className="mt-2 text-sm text-stone-700">Loading workspace...</p>
@@ -1283,7 +1281,7 @@ export default function AdminPage() {
 
   if (!authUserId || !currentUser) {
     return (
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
         <section className="paper-surface rounded-2xl p-6">
           <h1 className="font-display text-3xl text-stone-900">
             Admin Access Required
@@ -1295,13 +1293,13 @@ export default function AdminPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/auth"
-              className="rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white"
+              className="inline-flex min-h-11 items-center rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white sm:min-h-10"
             >
               Go to Sign In
             </Link>
             <Link
               href="/"
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700"
+              className="inline-flex min-h-11 items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 sm:min-h-10"
             >
               Back to site
             </Link>
@@ -1312,9 +1310,9 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
       <header className="paper-surface rounded-2xl p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
               Live Role Workspace
@@ -1332,20 +1330,20 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => void loadData()}
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700"
+              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 min-h-11 sm:min-h-10"
             >
               Refresh
             </button>
             <button
               type="button"
               onClick={() => void signOut()}
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700"
+              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 min-h-11 sm:min-h-10"
             >
               Sign Out
             </button>
             <Link
               href="/"
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700"
+              className="inline-flex min-h-11 items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 sm:min-h-10"
             >
               Back to site
             </Link>

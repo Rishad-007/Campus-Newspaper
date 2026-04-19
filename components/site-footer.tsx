@@ -27,7 +27,7 @@ export function SiteFooter() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Portfolio"
-                className="inline-flex items-center gap-2 rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
               >
                 <FaGlobe size={13} />
                 rishadnur.me
@@ -40,7 +40,7 @@ export function SiteFooter() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Facebook"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
               >
                 <FaFacebookF size={14} />
               </a>
@@ -49,7 +49,7 @@ export function SiteFooter() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Instagram"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
               >
                 <FaInstagram size={14} />
               </a>
@@ -80,7 +80,7 @@ export function SiteFooter() {
             </p>
             <Link
               href="/privacy-policy"
-              className="mt-4 inline-flex items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+              className="mt-4 inline-flex min-h-11 items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50 sm:min-h-10"
             >
               Privacy Policy
             </Link>

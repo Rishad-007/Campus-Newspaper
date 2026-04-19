@@ -10,12 +10,12 @@ export default async function TagPage({ params }: TagPageProps) {
   const stories = await getPublicStoriesByTagSlug(slug);
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
       <header className="paper-surface rounded-2xl p-5 sm:p-6">
         <Link
           href="/"
           aria-label="Back to homepage"
-          className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+          className="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-stone-400 text-stone-700 transition hover:bg-stone-900 hover:text-stone-50 sm:h-10 sm:w-10"
         >
           <svg
             viewBox="0 0 24 24"
@@ -29,7 +29,7 @@ export default async function TagPage({ params }: TagPageProps) {
             <path d="M6.5 10.8V20h11v-9.2" />
           </svg>
         </Link>
-        <h1 className="font-display mt-3 text-3xl text-stone-900 sm:text-5xl">
+        <h1 className="font-display mt-3 text-2xl text-stone-900 sm:text-5xl">
           Tag: #{slug}
         </h1>
         <p className="mt-2 text-sm text-stone-600">
@@ -62,7 +62,7 @@ export default async function TagPage({ params }: TagPageProps) {
                 </p>
                 <Link
                   href={`/news/${story.slug}`}
-                  className="mt-3 inline-block text-sm font-semibold text-(--accent)"
+                  className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-(--accent)"
                 >
                   Read full story
                 </Link>

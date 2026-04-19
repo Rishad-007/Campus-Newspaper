@@ -22,10 +22,16 @@ const PREVIEW_FRAME_HEIGHT = 360;
 const FINAL_EXPORT_SIZE = 1080;
 
 function normalizeToCropRatio(width: number, height: number) {
-  const safeWidth = Number.isFinite(width) && width > 0 ? Math.round(width) : 1080;
-  const safeHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : 1620;
-  const ratioHeightFromWidth = Math.round((safeWidth * CROP_RATIO_HEIGHT) / CROP_RATIO_WIDTH);
-  const ratioWidthFromHeight = Math.round((safeHeight * CROP_RATIO_WIDTH) / CROP_RATIO_HEIGHT);
+  const safeWidth =
+    Number.isFinite(width) && width > 0 ? Math.round(width) : 1080;
+  const safeHeight =
+    Number.isFinite(height) && height > 0 ? Math.round(height) : 1620;
+  const ratioHeightFromWidth = Math.round(
+    (safeWidth * CROP_RATIO_HEIGHT) / CROP_RATIO_WIDTH,
+  );
+  const ratioWidthFromHeight = Math.round(
+    (safeHeight * CROP_RATIO_WIDTH) / CROP_RATIO_HEIGHT,
+  );
 
   const widthFirstDelta = Math.abs(ratioHeightFromWidth - safeHeight);
   const heightFirstDelta = Math.abs(ratioWidthFromHeight - safeWidth);
@@ -71,7 +77,10 @@ function drawCropToCanvas({
   canvas.width = targetWidth;
   canvas.height = targetHeight;
 
-  const baseScale = Math.max(targetWidth / image.naturalWidth, targetHeight / image.naturalHeight);
+  const baseScale = Math.max(
+    targetWidth / image.naturalWidth,
+    targetHeight / image.naturalHeight,
+  );
   const drawScale = baseScale * zoom;
   const drawWidth = image.naturalWidth * drawScale;
   const drawHeight = image.naturalHeight * drawScale;
@@ -93,9 +102,40 @@ function drawCropToCanvas({
 export default function PhotocardCropPage() {
   const router = useRouter();
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [data, setData] = useState<LoadedCropData | null>(null);
+  const initialPending = useMemo(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return readPendingPhotocardCrop();
+  }, []);
+  const [data] = useState<LoadedCropData | null>(() => {
+    if (!initialPending) {
+      return null;
+    }
+
+    const normalized = normalizeToCropRatio(
+      FINAL_EXPORT_SIZE,
+      FINAL_EXPORT_SIZE,
+    );
+    const normalizedFileName = initialPending.fileName
+      .replace(/\d+x\d+/i, `${FINAL_EXPORT_SIZE}x${FINAL_EXPORT_SIZE}`)
+      .replace(/\.jpg$/i, "")
+      .concat(".jpg");
+
+    return {
+      dataUrl: initialPending.dataUrl,
+      fileName: normalizedFileName,
+      targetWidth: normalized.targetWidth,
+      targetHeight: normalized.targetHeight,
+    };
+  });
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() =>
+    initialPending
+      ? ""
+      : "No generated photocard found. Create a new one from your story list.",
+  );
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -107,35 +147,31 @@ export default function PhotocardCropPage() {
   );
 
   useEffect(() => {
-    const pending = readPendingPhotocardCrop();
-    if (!pending) {
-      setError("No generated photocard found. Create a new one from your story list.");
+    if (!data) {
       return;
     }
 
-    const normalized = normalizeToCropRatio(FINAL_EXPORT_SIZE, FINAL_EXPORT_SIZE);
-
-    const normalizedFileName = pending.fileName
-      .replace(/\d+x\d+/i, `${FINAL_EXPORT_SIZE}x${FINAL_EXPORT_SIZE}`)
-      .replace(/\.jpg$/i, "")
-      .concat(".jpg");
-
-    const loaded: LoadedCropData = {
-      dataUrl: pending.dataUrl,
-      fileName: normalizedFileName,
-      targetWidth: normalized.targetWidth,
-      targetHeight: normalized.targetHeight,
-    };
-
-    setData(loaded);
-    void loadImage(loaded.dataUrl)
+    let mounted = true;
+    void loadImage(data.dataUrl)
       .then((img) => {
-        setImage(img);
+        if (mounted) {
+          setImage(img);
+        }
       })
       .catch((imageError) => {
-        setError(imageError instanceof Error ? imageError.message : "Failed to load image");
+        if (mounted) {
+          setError(
+            imageError instanceof Error
+              ? imageError.message
+              : "Failed to load image",
+          );
+        }
       });
-  }, []);
+
+    return () => {
+      mounted = false;
+    };
+  }, [data]);
 
   useEffect(() => {
     if (!data || !image || !previewCanvasRef.current) {
@@ -165,7 +201,15 @@ export default function PhotocardCropPage() {
       ctx.fillStyle = "rgba(23, 19, 15, 0.55)";
       ctx.fillText("1:1 crop frame", 10, 16);
     }
-  }, [data, image, previewSize.height, previewSize.width, zoom, offsetX, offsetY]);
+  }, [
+    data,
+    image,
+    previewSize.height,
+    previewSize.width,
+    zoom,
+    offsetX,
+    offsetY,
+  ]);
 
   async function handleDownload() {
     if (!data || !image || isDownloading) {
@@ -188,13 +232,17 @@ export default function PhotocardCropPage() {
       });
 
       const blob = await new Promise<Blob>((resolve, reject) => {
-        outputCanvas.toBlob((value) => {
-          if (!value) {
-            reject(new Error("Failed to render final crop"));
-            return;
-          }
-          resolve(value);
-        }, "image/jpeg", 0.96);
+        outputCanvas.toBlob(
+          (value) => {
+            if (!value) {
+              reject(new Error("Failed to render final crop"));
+              return;
+            }
+            resolve(value);
+          },
+          "image/jpeg",
+          0.96,
+        );
       });
 
       const downloadUrl = URL.createObjectURL(blob);
@@ -218,7 +266,7 @@ export default function PhotocardCropPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
       <header className="paper-surface rounded-2xl p-5 sm:p-6">
         <p className="text-xs font-semibold tracking-[0.16em] text-stone-600 uppercase">
           Photocard Crop
@@ -231,7 +279,7 @@ export default function PhotocardCropPage() {
         </p>
       </header>
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
+      <section className="grid gap-5 lg:grid-cols-[1fr_1.1fr] lg:gap-6">
         <article className="paper-surface rounded-2xl p-4 sm:p-5">
           <p className="text-xs font-semibold tracking-[0.14em] text-stone-600 uppercase">
             Preview
@@ -244,7 +292,9 @@ export default function PhotocardCropPage() {
               className="aspect-square h-auto w-full max-w-90 overflow-hidden rounded-xl border border-stone-300 bg-white"
             />
           </div>
-          <p className="mt-2 text-center text-xs font-medium text-stone-600">Fixed 1:1 square window</p>
+          <p className="mt-2 text-center text-xs font-medium text-stone-600">
+            Fixed 1:1 square window
+          </p>
         </article>
 
         <article className="paper-surface rounded-2xl p-4 sm:p-5">
@@ -295,14 +345,16 @@ export default function PhotocardCropPage() {
               />
             </label>
 
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2 grid gap-2 sm:flex sm:flex-wrap">
               <button
                 type="button"
                 onClick={() => void handleDownload()}
                 disabled={!data || !image || isDownloading}
-                className="rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-stone-50 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:w-auto"
               >
-                {isDownloading ? "Downloading..." : "Download Square JPG (1080x1080)"}
+                {isDownloading
+                  ? "Downloading..."
+                  : "Download Square JPG (1080x1080)"}
               </button>
 
               <button
@@ -311,7 +363,7 @@ export default function PhotocardCropPage() {
                   clearPendingPhotocardCrop();
                   router.back();
                 }}
-                className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 sm:min-h-10 sm:w-auto"
               >
                 Back
               </button>
@@ -319,7 +371,7 @@ export default function PhotocardCropPage() {
               <Link
                 href="/admin"
                 onClick={() => clearPendingPhotocardCrop()}
-                className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 sm:min-h-10 sm:w-auto"
               >
                 Admin Desk
               </Link>

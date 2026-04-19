@@ -65,8 +65,8 @@ a {
     background: #ffffff;
     color: #000000;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 12pt;
-    line-height: 1.5;
+    font-size: 10.2pt;
+    line-height: 1.35;
   }
 
   .print-hidden {
@@ -85,6 +85,8 @@ a {
 
   .article-print {
     display: block !important;
+    max-height: none;
+    overflow: visible;
   }
 
   .print-masthead {
@@ -106,46 +108,61 @@ a {
   }
 
   .article-print-title {
-    font-size: 28pt !important;
-    line-height: 1.08 !important;
-    margin-bottom: 3mm !important;
+    font-size: 23pt !important;
+    line-height: 1.06 !important;
+    margin-bottom: 2.5mm !important;
     letter-spacing: -0.02em;
   }
 
   .article-print-meta {
     color: #222 !important;
-    font-size: 10pt !important;
+    font-size: 9.2pt !important;
     border-bottom: 1px solid #222;
-    padding-bottom: 2.5mm;
-    margin-bottom: 4mm !important;
+    padding-bottom: 2mm;
+    margin-bottom: 3mm !important;
   }
 
   .article-print-image {
-    margin-bottom: 5mm !important;
+    height: 62mm;
+    margin-bottom: 3.5mm !important;
     border: 1px solid #222;
     break-inside: avoid;
+    overflow: hidden;
+  }
+
+  .article-print-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center;
   }
 
   .article-body-print {
-    column-count: 2;
-    column-gap: 8mm;
+    column-count: 1;
+    column-gap: 0;
     text-align: justify;
     hyphens: auto;
     widows: 3;
     orphans: 3;
   }
 
-  .article-body-print p {
-    margin: 0 0 3.5mm !important;
-    break-inside: avoid;
-    line-height: 1.52;
+  .article-body-print > div {
+    break-inside: auto;
+    page-break-inside: auto;
   }
 
-  .article-body-print p:first-child::first-letter {
+  .article-body-print p {
+    margin: 0 0 2.7mm !important;
+    break-inside: auto;
+    page-break-inside: auto;
+    line-height: 1.35;
+  }
+
+  .article-body-print .lead-paragraph::first-letter {
     float: left;
-    font-size: 30pt;
+    font-size: 23pt;
     line-height: 0.9;
-    padding-right: 2mm;
+    padding-right: 1.5mm;
     font-weight: 700;
   }
 

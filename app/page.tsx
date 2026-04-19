@@ -27,13 +27,13 @@ export default async function Home() {
   const tags = await getPublicTagList();
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
       <header className="paper-surface rounded-2xl px-4 py-5 sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
           <p className="text-xs tracking-[0.16em] text-stone-600 uppercase">
             Saturday Edition • Dhaka • Vol 01
           </p>
-          <p className="text-xs tracking-[0.14em] text-stone-600 uppercase">
+          <p className="text-xs tracking-[0.14em] text-stone-600 uppercase sm:text-right">
             Frontpage Highlights
           </p>
         </div>
@@ -55,11 +55,11 @@ export default async function Home() {
                 className="h-full w-full object-cover"
               />
             </div>
-            <h2 className="font-display mt-2 text-3xl font-semibold leading-tight text-stone-900 sm:text-4xl">
+            <h2 className="font-display mt-3 text-2xl font-semibold leading-tight text-stone-900 sm:text-4xl">
               {leadStory.title}
             </h2>
             <p
-              className={`${leadStory.locale === "bn" ? "font-bangla" : ""} mt-4 text-lg leading-8 text-stone-700`}
+              className={`${leadStory.locale === "bn" ? "font-bangla" : ""} mt-3 text-base leading-7 text-stone-700 sm:text-lg sm:leading-8`}
             >
               {leadStory.excerpt}
             </p>
@@ -72,7 +72,7 @@ export default async function Home() {
 
             <Link
               href={`/news/${leadStory.slug}`}
-              className="mt-6 inline-flex items-center rounded-full bg-(--accent) px-5 py-2 text-sm font-semibold text-white! shadow-sm transition hover:brightness-110 hover:text-white!"
+              className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-(--accent) px-5 py-2 text-sm font-semibold text-white! shadow-sm transition hover:brightness-110 hover:text-white! sm:min-h-10 sm:w-auto"
             >
               Read full report
             </Link>
@@ -128,17 +128,17 @@ export default async function Home() {
       </section>
 
       <section className="paper-surface rounded-2xl p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-dashed border-stone-400 pb-4">
+        <div className="flex flex-col gap-3 border-b border-dashed border-stone-400 pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
           <h3 className="font-display text-2xl text-stone-900 sm:text-3xl">
             Latest Reports
           </h3>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <p className="text-sm text-stone-600">
               Responsive cards for mobile, tablet, and desktop
             </p>
             <Link
               href="/news"
-              className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+              className="inline-flex min-h-10 items-center rounded-full border border-stone-400 px-4 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
             >
               Browse All News
             </Link>
@@ -201,7 +201,7 @@ export default async function Home() {
             <Link
               key={tag}
               href={`/tag/${tag}`}
-              className="rounded-full border border-stone-400 px-3 py-1 text-sm font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+              className="inline-flex min-h-10 items-center rounded-full border border-stone-400 px-3 py-1 text-sm font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
             >
               #{tag}
             </Link>

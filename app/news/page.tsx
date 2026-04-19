@@ -59,9 +59,9 @@ export default async function AllNewsPage({
     });
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
       <header className="paper-surface rounded-2xl p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold tracking-[0.14em] text-stone-600 uppercase">
               Archive Desk
@@ -75,7 +75,7 @@ export default async function AllNewsPage({
           </div>
           <Link
             href="/"
-            className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50 sm:min-h-10 sm:w-auto"
           >
             Back to homepage
           </Link>
@@ -140,16 +140,16 @@ export default async function AllNewsPage({
             />
           </label>
 
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-1">
             <button
               type="submit"
-              className="rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white"
+              className="min-h-11 rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white sm:min-h-10"
             >
               Apply
             </button>
             <Link
               href="/news"
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700"
+              className="inline-flex min-h-11 items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 sm:min-h-10"
             >
               Reset
             </Link>
@@ -158,7 +158,7 @@ export default async function AllNewsPage({
       </section>
 
       <section className="paper-surface rounded-2xl p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-3 border-b border-dashed border-stone-400 pb-3">
+        <div className="flex flex-col gap-2 border-b border-dashed border-stone-400 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <h2 className="font-display text-2xl text-stone-900">
             Published News
           </h2>

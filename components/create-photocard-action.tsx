@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaDownload } from "react-icons/fa6";
 import { savePendingPhotocardCrop } from "@/lib/photocard-crop-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -175,7 +175,8 @@ function drawImageCover(
   height: number,
 ) {
   const imageWidth = image instanceof HTMLImageElement ? image.naturalWidth : 0;
-  const imageHeight = image instanceof HTMLImageElement ? image.naturalHeight : 0;
+  const imageHeight =
+    image instanceof HTMLImageElement ? image.naturalHeight : 0;
   if (!imageWidth || !imageHeight) {
     ctx.fillStyle = "#2d2019";
     ctx.fillRect(x, y, width, height);
@@ -322,7 +323,11 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
   ctx.fillText("Daily Darpan", headerChipX + 80, headerChipY + 15);
   ctx.font = `500 20px ${bodyFontFamily}`;
   ctx.fillStyle = "rgba(255,253,247,0.8)";
-  ctx.fillText("Bilingual Newsprint Edition", headerChipX + 80, headerChipY + 76);
+  ctx.fillText(
+    "Bilingual Newsprint Edition",
+    headerChipX + 80,
+    headerChipY + 76,
+  );
 
   ctx.textAlign = "right";
   ctx.fillStyle = "#fffdf7";
@@ -330,7 +335,11 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
   ctx.fillText(dateLabel, headerChipX + headerChipWidth - 20, headerChipY + 22);
   ctx.font = `500 18px ${bodyFontFamily}`;
   ctx.fillStyle = "rgba(255,253,247,0.74)";
-  ctx.fillText(article.categoryLabel, headerChipX + headerChipWidth - 20, headerChipY + 74);
+  ctx.fillText(
+    article.categoryLabel,
+    headerChipX + headerChipWidth - 20,
+    headerChipY + 74,
+  );
   ctx.restore();
 
   const imageX = frameX + 24;
@@ -343,7 +352,12 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
   ctx.clip();
   const heroImage = await resolveImageSource(article.heroImage);
   drawImageCover(ctx, heroImage, imageX, imageY, imageWidth, imageHeight);
-  const imageOverlay = ctx.createLinearGradient(0, imageY, 0, imageY + imageHeight);
+  const imageOverlay = ctx.createLinearGradient(
+    0,
+    imageY,
+    0,
+    imageY + imageHeight,
+  );
   imageOverlay.addColorStop(0, "rgba(10, 8, 7, 0.08)");
   imageOverlay.addColorStop(1, "rgba(10, 8, 7, 0.26)");
   ctx.fillStyle = imageOverlay;
@@ -378,7 +392,8 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
   });
 
   const subtitleY = textCardY + 24 + titleHeight + 14;
-  const subtitleText = article.excerpt?.trim() || `${article.categoryLabel} | ${dateLabel}`;
+  const subtitleText =
+    article.excerpt?.trim() || `${article.categoryLabel} | ${dateLabel}`;
   drawFittedParagraph({
     ctx,
     text: subtitleText,
@@ -396,14 +411,18 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
   });
 
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((value) => {
-      if (!value) {
-        reject(new Error("Failed to create photocard image"));
-        return;
-      }
+    canvas.toBlob(
+      (value) => {
+        if (!value) {
+          reject(new Error("Failed to create photocard image"));
+          return;
+        }
 
-      resolve(value);
-    }, "image/jpeg", 0.96);
+        resolve(value);
+      },
+      "image/jpeg",
+      0.96,
+    );
   });
 
   return blob;
@@ -423,72 +442,13 @@ export async function downloadPhotocardJpg(article: PhotocardStoryInput) {
 
 export function CreatePhotocardAction({ article }: CreatePhotocardActionProps) {
   const router = useRouter();
-  const [isReady, setIsReady] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
-  const [profile, setProfile] = useState<ProfilePreview | null>(null);
 
-  const dateLabel = useMemo(() => {
-    const locale = article.locale === "bn" ? "bn-BD" : "en-GB";
-    return new Intl.DateTimeFormat(locale, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(new Date(article.publishedAt));
-  }, [article.locale, article.publishedAt]);
-
-  const canCreatePhotocard =
-    article.status === "published" &&
-    Boolean(profile) &&
-    (profile?.id === article.authorId ||
-      Boolean(profile && EDITORIAL_ROLES.includes(profile.role)));
-
-  useEffect(() => {
-    if (!hasSupabasePublicConfig()) {
-      return;
-    }
-
-    let mounted = true;
-    const supabase = getSupabaseBrowserClient();
-
-    const loadProfile = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (!user) {
-        setProfile(null);
-        setIsReady(true);
-        return;
-      }
-
-      const { data: profileRow } = await supabase
-        .from("profiles")
-        .select("id, role")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!mounted) {
-        return;
-      }
-
-      setProfile((profileRow as ProfilePreview | null) ?? null);
-      setIsReady(true);
-    };
-
-    void loadProfile();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const isPublished = article.status === "published";
 
   async function handleCreatePhotocard() {
-    if (!canCreatePhotocard || isGenerating) {
+    if (!isPublished || isGenerating) {
       return;
     }
 
@@ -505,37 +465,43 @@ export function CreatePhotocardAction({ article }: CreatePhotocardActionProps) {
       });
       router.push("/photocard-crop");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create photocard";
+      const message =
+        error instanceof Error ? error.message : "Failed to create photocard";
       setError(message);
     } finally {
       setIsGenerating(false);
     }
   }
 
-  if (!isReady || !canCreatePhotocard) {
+  if (!isPublished) {
     return null;
   }
 
+  const buttonLabel = isGenerating
+    ? "Creating JPG..."
+    : "Download JPG";
+
+  const statusLabel =
+    "Generate a square social photocard instantly from this published story. Login is not required.";
+
   return (
-    <section className="rounded-2xl border border-stone-300 bg-white p-4 shadow-sm print:hidden">
+    <section className="rounded-2xl border border-stone-300 bg-white p-4 shadow-sm print:hidden sm:p-5">
       <p className="text-xs font-semibold tracking-[0.18em] text-stone-700 uppercase">
         Photocard Tool
       </p>
       <h2 className="font-display mt-1 text-2xl text-stone-900">
         Create a branded JPG
       </h2>
-      <p className="mt-2 text-sm leading-6 text-stone-600">
-        Generate a 2:3 premium photocard instantly from this published story.
-      </p>
+      <p className="mt-2 text-sm leading-6 text-stone-600">{statusLabel}</p>
 
       <button
         type="button"
         onClick={() => void handleCreatePhotocard()}
-        disabled={isGenerating}
-        className="mt-4 inline-flex items-center gap-2 rounded-full border border-stone-300 bg-stone-900 px-4 py-2 text-sm font-semibold text-stone-50 transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-70"
+        disabled={isGenerating || !isPublished}
+        className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-stone-300 bg-stone-900 px-4 py-2.5 text-sm font-semibold text-stone-50 transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-70 sm:min-h-10 sm:w-auto"
       >
         <FaDownload className="text-sm" />
-        {isGenerating ? "Creating JPG..." : "Create Photocard"}
+        {buttonLabel}
       </button>
 
       {error ? (
