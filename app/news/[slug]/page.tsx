@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CreatePhotocardAction } from "@/components/create-photocard-action";
 import { PrintShareActions } from "@/components/print-share-actions";
 import { getPublicStories, getPublicStoryBySlug } from "@/lib/news-service";
 
@@ -144,6 +145,7 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
         </article>
 
         <aside className="space-y-4">
+          <CreatePhotocardAction article={article} />
           <PrintShareActions title={article.title} />
 
           <section className="paper-surface rounded-2xl p-4 print-hidden sm:p-5">

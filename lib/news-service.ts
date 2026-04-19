@@ -11,7 +11,9 @@ export type PublicStory = {
   categoryLabel: string;
   tags: string[];
   author: string;
+  authorId: string;
   publishedAt: string;
+  status: "draft" | "submitted" | "published";
   readTime: number;
   heroImage: string;
   placement: "none" | "lead" | "brief" | "latest";
@@ -98,7 +100,9 @@ function storyFromRow(row: ArticleRow, tags: string[]): PublicStory {
     categoryLabel,
     tags,
     author: profile?.full_name ?? "Staff Reporter",
+    authorId: row.author_id,
     publishedAt,
+    status: row.status,
     readTime: Math.max(2, Math.ceil(row.body.split(/\s+/).length / 220)),
     heroImage: row.hero_image_url ?? "/newsroom.jpg",
     placement: row.placement,

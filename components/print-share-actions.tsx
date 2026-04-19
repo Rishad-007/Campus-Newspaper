@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { FaFacebookF } from "react-icons/fa";
 import { FaLink, FaPrint, FaXTwitter } from "react-icons/fa6";
 
@@ -12,13 +12,14 @@ export function PrintShareActions({ title }: PrintShareActionsProps) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
     "idle",
   );
-  const [pageUrl, setPageUrl] = useState("");
-  const [canNativeShare, setCanNativeShare] = useState(false);
-
-  useEffect(() => {
-    setPageUrl(window.location.href);
-    setCanNativeShare(typeof navigator.share === "function");
-  }, []);
+  const pageUrl = useMemo(
+    () => (typeof window === "undefined" ? "" : window.location.href),
+    [],
+  );
+  const canNativeShare = useMemo(
+    () => typeof navigator !== "undefined" && typeof navigator.share === "function",
+    [],
+  );
 
   async function handleCopyLink() {
     if (!pageUrl) return;

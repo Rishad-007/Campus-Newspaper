@@ -2,8 +2,9 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
 
-type SupabaseSchema = any;
+type SupabaseSchema = Database;
 
 let client: SupabaseClient<SupabaseSchema> | null = null;
 

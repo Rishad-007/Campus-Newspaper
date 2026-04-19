@@ -1,7 +1,7 @@
 "use client";
 
 import type { User } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { AuthDemoPage } from "./AuthDemoPage";
@@ -28,7 +28,8 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
     null,
   );
 
-  async function loadRequestState(userId: string | null) {
+  const loadRequestState = useCallback(
+    async (userId: string | null) => {
     if (!userId) {
       setRequestStatus("none");
       setRequestedRole(null);
@@ -47,7 +48,7 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
 
     setRequestStatus(data.access_request_status ?? "none");
     setRequestedRole(data.requested_role ?? null);
-  }
+  }, [supabase]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -56,7 +57,9 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
   }
 
   useEffect(() => {
-    void loadRequestState(user?.id ?? null);
+    const initialLoadId = window.setTimeout(() => {
+      void loadRequestState(user?.id ?? null);
+    }, 0);
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
@@ -66,9 +69,10 @@ export default function EmailPasswordDemo({ user }: EmailPasswordDemoProps) {
     );
 
     return () => {
+      window.clearTimeout(initialLoadId);
       listener?.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [loadRequestState, user?.id, supabase]);
 
   async function requestAccess(role: RequestedRole) {
     if (!currentUser) return;

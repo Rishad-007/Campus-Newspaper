@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getCategoryMap } from "@/lib/mock-news";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -46,7 +46,17 @@ export function SiteHeader() {
   const categories = getCategoryMap();
   const [compact, setCompact] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+  const supabase = useMemo<SupabaseClient | null>(() => {
+    if (!hasSupabasePublicConfig()) {
+      return null;
+    }
+
+    try {
+      return getSupabaseBrowserClient();
+    } catch {
+      return null;
+    }
+  }, []);
   const [editionTimestamp, setEditionTimestamp] = useState(() => {
     const now = new Date();
     return formatEditionTimestamp(now);
@@ -55,14 +65,6 @@ export function SiteHeader() {
     const now = new Date();
     return formatCompactEditionTimestamp(now);
   });
-
-  useEffect(() => {
-    if (!hasSupabasePublicConfig()) {
-      return;
-    }
-
-    setSupabase(getSupabaseBrowserClient());
-  }, []);
 
   useEffect(() => {
     let ticking = false;
@@ -148,7 +150,7 @@ export function SiteHeader() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: string, session) => {
       if (mounted) {
         setIsAuthenticated(Boolean(session?.user));
       }

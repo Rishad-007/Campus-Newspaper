@@ -1,8 +1,18 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FaDownload } from "react-icons/fa6";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  createPhotocardFileName,
+  generatePhotocardBlob,
+  PHOTOCARD_HEIGHT,
+  PHOTOCARD_WIDTH,
+} from "@/components/create-photocard-action";
+import { savePendingPhotocardCrop } from "@/lib/photocard-crop-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import type {
@@ -25,6 +35,7 @@ type TabKey =
 
 type AdminStory = {
   id: string;
+  locale: "en" | "bn";
   title: string;
   slug: string;
   excerpt: string;
@@ -39,6 +50,7 @@ type AdminStory = {
   status: StoryStatus;
   rejectionReason: string | null;
   placement: StoryPlacement;
+  publishedAt: string;
   updatedAt: string;
 };
 
@@ -121,7 +133,7 @@ async function loadImageElement(file: File) {
 
   try {
     const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => resolve(img);
       img.onerror = () => reject(new Error("Failed to read image file"));
       img.src = objectUrl;
@@ -146,27 +158,20 @@ async function canvasToWebpBlob(canvas: HTMLCanvasElement, quality: number) {
 }
 
 export default function AdminPage() {
-  if (!hasSupabasePublicConfig()) {
-    return (
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        <section className="paper-surface rounded-2xl p-6 sm:p-8">
-          <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
-            Admin Desk
-          </p>
-          <h1 className="font-display mt-2 text-4xl text-stone-900">
-            Supabase is not configured
-          </h1>
-          <p className="mt-3 text-sm leading-7 text-stone-700">
-            Add the public Supabase environment variables to use the role
-            management and story workflow screens.
-          </p>
-        </section>
-      </main>
-    );
-  }
+  const isConfigured = hasSupabasePublicConfig();
 
   const router = useRouter();
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  const supabaseClient = useMemo(() => {
+    if (!isConfigured) {
+      return null;
+    }
+
+    try {
+      return getSupabaseBrowserClient();
+    } catch {
+      return null;
+    }
+  }, [isConfigured]) as SupabaseClient;
 
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<ProfileRow | null>(null);
@@ -209,17 +214,15 @@ export default function AdminPage() {
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [managedTags, setManagedTags] = useState<ManagedTag[]>([]);
   const [tagSearchTerm, setTagSearchTerm] = useState("");
+  const [photocardStoryId, setPhotocardStoryId] = useState<string | null>(null);
+  const [photocardErrorByStoryId, setPhotocardErrorByStoryId] = useState<
+    Record<string, string>
+  >({});
 
   const journalists = useMemo(
     () => users.filter((user) => user.role === "writer"),
     [users],
   );
-
-  useEffect(() => {
-    if (!openedJournalistId && journalists.length > 0) {
-      setOpenedJournalistId(journalists[0].id);
-    }
-  }, [journalists, openedJournalistId]);
 
   const myStories = useMemo(() => {
     if (!currentUser) return [];
@@ -242,9 +245,11 @@ export default function AdminPage() {
     [users],
   );
 
+  const activeJournalistId = openedJournalistId || journalists[0]?.id || "";
+
   const openedJournalistStories = useMemo(
-    () => stories.filter((story) => story.authorId === openedJournalistId),
-    [openedJournalistId, stories],
+    () => stories.filter((story) => story.authorId === activeJournalistId),
+    [activeJournalistId, stories],
   );
 
   const canManageUsers = currentUser?.role === "owner";
@@ -278,6 +283,12 @@ export default function AdminPage() {
     );
   }, [currentUser]);
 
+  const effectiveActiveTab = availableTabs.some((tab) => tab.key === activeTab)
+    ? activeTab
+    : "overview";
+  const effectiveSelectedUserId = selectedUserId || users[0]?.id || "";
+  const effectiveWriterCategoryId = writerCategoryId || categories[0]?.id || "";
+
   const filteredManagedTags = useMemo(() => {
     const normalizedQuery = tagSearchTerm.trim().toLowerCase();
 
@@ -292,14 +303,14 @@ export default function AdminPage() {
     );
   }, [managedTags, tagSearchTerm]);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
 
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabaseClient.auth.getUser();
 
     if (authError || !user) {
       setAuthUserId(null);
@@ -315,7 +326,7 @@ export default function AdminPage() {
     let profiles: unknown[] | null = null;
     let profilesError: { message: string } | null = null;
 
-    const profilesResult = await supabase
+    const profilesResult = await supabaseClient
       .from("profiles")
       .select(
         "id, full_name, email, role, requested_role, access_request_status, access_request_updated_at",
@@ -323,17 +334,21 @@ export default function AdminPage() {
       .order("created_at", { ascending: true });
 
     if (profilesResult.error) {
-      const fallbackProfilesResult = await supabase
+      const fallbackProfilesResult = await supabaseClient
         .from("profiles")
         .select("id, full_name, email, role")
         .order("created_at", { ascending: true });
 
-      profiles = (fallbackProfilesResult.data ?? []).map((profile) => ({
+      profiles = (fallbackProfilesResult.data ?? []).map(
+        (
+          profile: Pick<ProfileRow, "id" | "full_name" | "email" | "role">,
+        ) => ({
         ...profile,
         requested_role: null,
         access_request_status: "none",
         access_request_updated_at: null,
-      }));
+      }),
+      );
       profilesError = fallbackProfilesResult.error;
     } else {
       profiles = profilesResult.data;
@@ -360,7 +375,7 @@ export default function AdminPage() {
       return;
     }
 
-    const { data: categoryRows, error: categoriesError } = await supabase
+    const { data: categoryRows, error: categoriesError } = await supabaseClient
       .from("categories")
       .select("id, slug, name_en, name_bn")
       .order("name_en", { ascending: true });
@@ -373,11 +388,8 @@ export default function AdminPage() {
 
     const mappedCategories = (categoryRows ?? []) as CategoryRow[];
     setCategories(mappedCategories);
-    if (!writerCategoryId && mappedCategories.length > 0) {
-      setWriterCategoryId(mappedCategories[0].id);
-    }
 
-    const { data: articleRows, error: articlesError } = await supabase
+    const { data: articleRows, error: articlesError } = await supabaseClient
       .from("articles")
       .select(
         "id, locale, title, slug, excerpt, body, hero_image_url, category_id, author_id, status, rejection_reason, placement, created_at, updated_at, published_at, categories:category_id(id, slug, name_en, name_bn)",
@@ -401,13 +413,13 @@ export default function AdminPage() {
       articleIds.length === 0
         ? null
         : (
-            await supabase
+            await supabaseClient
               .from("article_tags")
               .select("article_id, tag_id, tags:tag_id(slug, name)")
               .in("article_id", articleIds)
           ).data;
 
-    const { data: tagRows, error: tagsError } = await supabase
+    const { data: tagRows, error: tagsError } = await supabaseClient
       .from("tags")
       .select("id, slug, name")
       .order("slug", { ascending: true });
@@ -448,6 +460,7 @@ export default function AdminPage() {
 
       return {
         id: story.id,
+        locale: story.locale,
         title: story.title,
         slug: story.slug,
         excerpt: story.excerpt,
@@ -462,26 +475,42 @@ export default function AdminPage() {
         status: story.status,
         rejectionReason: story.rejection_reason,
         placement: story.placement,
+        publishedAt: story.published_at ?? story.updated_at,
         updatedAt: story.updated_at,
       };
     });
 
     setStories(mappedStories);
 
-    if (!availableTabs.some((tab) => tab.key === activeTab)) {
-      setActiveTab("overview");
-    }
-
-    if (!selectedUserId && mappedUsers.length > 0) {
-      setSelectedUserId(mappedUsers[0].id);
-    }
-
     setLoading(false);
-  }
+  }, [supabaseClient]);
 
   useEffect(() => {
-    void loadData();
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadData]);
+
+  if (!isConfigured) {
+    return (
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+        <section className="paper-surface rounded-2xl p-6 sm:p-8">
+          <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
+            Admin Desk
+          </p>
+          <h1 className="font-display mt-2 text-4xl text-stone-900">
+            Supabase is not configured
+          </h1>
+          <p className="mt-3 text-sm leading-7 text-stone-700">
+            Add the public Supabase environment variables to use the role
+            management and story workflow screens.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   async function ensureTagIds(tagSlugs: string[]) {
     if (tagSlugs.length === 0) {
@@ -501,7 +530,7 @@ export default function AdminPage() {
       name: slug,
     }));
 
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await supabaseClient
       .from("tags")
       .upsert(payload, { onConflict: "slug" });
 
@@ -509,7 +538,7 @@ export default function AdminPage() {
       throw new Error(upsertError.message);
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("tags")
       .select("id, slug")
       .in("slug", normalized);
@@ -518,13 +547,13 @@ export default function AdminPage() {
       throw new Error(error.message);
     }
 
-    return (data ?? []).map((row) => row.id);
+    return (data ?? []).map((row: { id: string }) => row.id);
   }
 
   async function replaceArticleTags(articleId: string, tagSlugs: string[]) {
     const tagIds = await ensureTagIds(tagSlugs);
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseClient
       .from("article_tags")
       .delete()
       .eq("article_id", articleId);
@@ -537,12 +566,12 @@ export default function AdminPage() {
       return;
     }
 
-    const inserts = tagIds.map((tagId) => ({
+    const inserts = tagIds.map((tagId: string) => ({
       article_id: articleId,
       tag_id: tagId,
     }));
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await supabaseClient
       .from("article_tags")
       .insert(inserts);
 
@@ -604,7 +633,7 @@ export default function AdminPage() {
     const safeTitle = slugFromTitle(writerTitle || "story-image");
     const filePath = `${currentUser.id}/${Date.now()}-${safeTitle}.webp`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseClient.storage
       .from(ARTICLE_IMAGE_BUCKET)
       .upload(filePath, compressed, {
         contentType: "image/webp",
@@ -617,7 +646,7 @@ export default function AdminPage() {
       );
     }
 
-    const { data } = supabase.storage
+    const { data } = supabaseClient.storage
       .from(ARTICLE_IMAGE_BUCKET)
       .getPublicUrl(filePath);
 
@@ -639,7 +668,7 @@ export default function AdminPage() {
   }
 
   async function assignRoleToUser() {
-    if (!canManageUsers || !selectedUserId) return;
+    if (!canManageUsers || !effectiveSelectedUserId) return;
     if (selectedUser?.role === "owner") {
       setError("Owner role is protected and cannot be changed.");
       return;
@@ -648,10 +677,10 @@ export default function AdminPage() {
     setError("");
     setNotice("");
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from("profiles")
       .update({ role: selectedRoleForUser })
-      .eq("id", selectedUserId);
+      .eq("id", effectiveSelectedUserId);
 
     setSaving(false);
 
@@ -665,7 +694,7 @@ export default function AdminPage() {
   }
 
   async function removeUserRole() {
-    if (!canManageUsers || !selectedUserId) return;
+    if (!canManageUsers || !effectiveSelectedUserId) return;
     if (selectedUser?.role === "owner") {
       setError("Owner role is protected and cannot be removed.");
       return;
@@ -674,10 +703,10 @@ export default function AdminPage() {
     setError("");
     setNotice("");
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from("profiles")
       .update({ role: "writer" })
-      .eq("id", selectedUserId);
+      .eq("id", effectiveSelectedUserId);
 
     setSaving(false);
 
@@ -730,7 +759,11 @@ export default function AdminPage() {
   }
 
   async function changePasswordForUser() {
-    if (!canManageUsers || !selectedUserId || passwordDraft.trim().length < 8) {
+    if (
+      !canManageUsers ||
+      !effectiveSelectedUserId ||
+      passwordDraft.trim().length < 8
+    ) {
       setError("Password must be at least 8 characters.");
       return;
     }
@@ -745,7 +778,7 @@ export default function AdminPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userId: selectedUserId,
+        userId: effectiveSelectedUserId,
         newPassword: passwordDraft,
       }),
     });
@@ -848,7 +881,7 @@ export default function AdminPage() {
     setError("");
     setNotice("");
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from("articles")
       .update({
         status: "published",
@@ -880,7 +913,7 @@ export default function AdminPage() {
     setError("");
     setNotice("");
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from("articles")
       .update({ status: "draft", rejection_reason: reason })
       .eq("id", storyId);
@@ -902,7 +935,7 @@ export default function AdminPage() {
     setError("");
     setNotice("");
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseClient
       .from("articles")
       .delete()
       .eq("id", storyId);
@@ -925,7 +958,7 @@ export default function AdminPage() {
     setError("");
     setNotice("");
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseClient
       .from("article_tags")
       .delete()
       .eq("tag_id", tag.id);
@@ -956,7 +989,7 @@ export default function AdminPage() {
     setError("");
     setNotice("");
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseClient
       .from("tags")
       .delete()
       .eq("id", tag.id);
@@ -983,13 +1016,13 @@ export default function AdminPage() {
     setNotice("");
 
     if (placement === "lead") {
-      await supabase
+      await supabaseClient
         .from("articles")
         .update({ placement: "none" })
         .eq("placement", "lead");
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from("articles")
       .update({ placement })
       .eq("id", storyId);
@@ -1011,7 +1044,7 @@ export default function AdminPage() {
       setError("Headline, excerpt, and body are required.");
       return;
     }
-    if (!writerCategoryId) {
+    if (!effectiveWriterCategoryId) {
       setError("Please select a category.");
       return;
     }
@@ -1033,7 +1066,7 @@ export default function AdminPage() {
       title: writerTitle.trim(),
       slug: `${slugFromTitle(writerTitle)}-${Date.now().toString().slice(-5)}`,
       excerpt: writerExcerpt.trim(),
-      category_id: writerCategoryId,
+      category_id: effectiveWriterCategoryId,
       body: writerBody.trim(),
       author_id: currentUser.id,
       rejection_reason: null,
@@ -1060,7 +1093,7 @@ export default function AdminPage() {
     }
 
     if (editingStoryId) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseClient
         .from("articles")
         .update({
           title: payload.title,
@@ -1093,7 +1126,7 @@ export default function AdminPage() {
       setEditingStoryId(null);
       setNotice("Story updated.");
     } else {
-      const { data: insertData, error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabaseClient
         .from("articles")
         .insert({
           ...payload,
@@ -1158,7 +1191,7 @@ export default function AdminPage() {
     setError("");
     setNotice("");
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from("articles")
       .update({ status: "submitted", rejection_reason: null })
       .eq("id", storyId);
@@ -1175,15 +1208,62 @@ export default function AdminPage() {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     router.push("/auth");
     router.refresh();
   }
 
-  const selectedUser = users.find((user) => user.id === selectedUserId);
+  async function createPhotocardFromStory(story: AdminStory) {
+    if (story.status !== "published") {
+      return;
+    }
+
+    setPhotocardStoryId(story.id);
+    setPhotocardErrorByStoryId((previous) => ({
+      ...previous,
+      [story.id]: "",
+    }));
+
+    try {
+      const photocardInput = {
+        id: story.id,
+        slug: story.slug,
+        locale: story.locale,
+        title: story.title,
+        excerpt: story.excerpt,
+        heroImage: story.heroImageUrl,
+        publishedAt: story.publishedAt,
+        categoryLabel: story.categoryLabel,
+        authorId: story.authorId,
+        status: story.status,
+      };
+
+      const blob = await generatePhotocardBlob(photocardInput);
+      await savePendingPhotocardCrop({
+        blob,
+        fileName: createPhotocardFileName(photocardInput),
+        targetWidth: PHOTOCARD_WIDTH,
+        targetHeight: PHOTOCARD_HEIGHT,
+      });
+      router.push("/photocard-crop");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create photocard";
+      setPhotocardErrorByStoryId((previous) => ({
+        ...previous,
+        [story.id]: message,
+      }));
+    } finally {
+      setPhotocardStoryId(null);
+    }
+  }
+
+  const selectedUser = users.find(
+    (user) => user.id === effectiveSelectedUserId,
+  );
   const isSelectedUserOwner = selectedUser?.role === "owner";
   const selectedJournalist = journalists.find(
-    (journalist) => journalist.id === openedJournalistId,
+    (journalist) => journalist.id === activeJournalistId,
   );
 
   const leadStory = stories.find((story) => story.placement === "lead") ?? null;
@@ -1279,7 +1359,7 @@ export default function AdminPage() {
               type="button"
               onClick={() => setActiveTab(tab.key)}
               className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                tab.key === activeTab
+                tab.key === effectiveActiveTab
                   ? "bg-(--accent) text-white"
                   : "border border-stone-400 text-stone-700"
               }`}
@@ -1302,7 +1382,7 @@ export default function AdminPage() {
         )}
       </header>
 
-      {activeTab === "overview" && (
+      {effectiveActiveTab === "overview" && (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <article className="paper-surface rounded-2xl p-5">
             <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
@@ -1347,7 +1427,7 @@ export default function AdminPage() {
         </section>
       )}
 
-      {activeTab === "users" &&
+      {effectiveActiveTab === "users" &&
         (canManageUsers || canApproveAccessRequests) && (
           <section className="paper-surface rounded-2xl p-5 sm:p-6">
             <h2 className="font-display text-2xl text-stone-900">
@@ -1444,7 +1524,7 @@ export default function AdminPage() {
                       Select user
                     </span>
                     <select
-                      value={selectedUserId}
+                      value={effectiveSelectedUserId}
                       onChange={(event) =>
                         setSelectedUserId(event.target.value)
                       }
@@ -1535,7 +1615,7 @@ export default function AdminPage() {
           </section>
         )}
 
-      {activeTab === "journalists" && canManageJournalists && (
+      {effectiveActiveTab === "journalists" && canManageJournalists && (
         <section className="grid gap-6 lg:grid-cols-[1.1fr_1.4fr]">
           <article className="paper-surface rounded-2xl p-5 sm:p-6">
             <h2 className="font-display text-2xl text-stone-900">
@@ -1725,7 +1805,7 @@ export default function AdminPage() {
         </section>
       )}
 
-      {activeTab === "pending" && canModerate && (
+      {effectiveActiveTab === "pending" && canModerate && (
         <section className="paper-surface rounded-2xl p-5 sm:p-6">
           <h2 className="font-display text-2xl text-stone-900">
             Pending News Requests
@@ -1763,9 +1843,11 @@ export default function AdminPage() {
                 <p className="mt-2 text-sm text-stone-700">{story.excerpt}</p>
 
                 <div className="mt-3 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
-                  <img
+                  <Image
                     src={story.heroImageUrl}
                     alt={story.title}
+                    width={1200}
+                    height={675}
                     className="h-48 w-full object-cover"
                   />
                 </div>
@@ -1791,9 +1873,11 @@ export default function AdminPage() {
                       Full Article Content
                     </p>
                     <div className="mt-3 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
-                      <img
+                      <Image
                         src={story.heroImageUrl}
                         alt={story.title}
+                        width={1200}
+                        height={675}
                         className="h-56 w-full object-cover"
                       />
                     </div>
@@ -1844,7 +1928,7 @@ export default function AdminPage() {
         </section>
       )}
 
-      {activeTab === "placement" && canManagePlacement && (
+      {effectiveActiveTab === "placement" && canManagePlacement && (
         <section className="paper-surface rounded-2xl p-5 sm:p-6">
           <h2 className="font-display text-2xl text-stone-900">
             Front Page Placement
@@ -1998,7 +2082,7 @@ export default function AdminPage() {
         </section>
       )}
 
-      {activeTab === "my-stories" && canWrite && (
+      {effectiveActiveTab === "my-stories" && canWrite && (
         <section className="grid gap-6 lg:grid-cols-[1.2fr_1.4fr]">
           <article className="paper-surface rounded-2xl p-5 sm:p-6">
             <h2 className="font-display text-2xl text-stone-900">
@@ -2031,7 +2115,7 @@ export default function AdminPage() {
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <select
-                  value={writerCategoryId}
+                  value={effectiveWriterCategoryId}
                   onChange={(event) => setWriterCategoryId(event.target.value)}
                   className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
                 >
@@ -2076,9 +2160,11 @@ export default function AdminPage() {
 
               {writerImagePreview && (
                 <div className="overflow-hidden rounded-lg border border-stone-300">
-                  <img
+                  <Image
                     src={writerImagePreview}
                     alt="Selected story preview"
+                    width={1200}
+                    height={675}
                     className="h-auto w-full object-cover"
                   />
                 </div>
@@ -2163,6 +2249,19 @@ export default function AdminPage() {
                     >
                       Delete
                     </button>
+                    {story.status === "published" && (
+                      <button
+                        type="button"
+                        disabled={photocardStoryId === story.id}
+                        onClick={() => void createPhotocardFromStory(story)}
+                        className="inline-flex items-center gap-1 rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <FaDownload className="text-[10px]" />
+                        {photocardStoryId === story.id
+                          ? "Creating..."
+                          : "Create Photocard"}
+                      </button>
+                    )}
                     {story.status === "draft" && (
                       <button
                         type="button"
@@ -2174,6 +2273,11 @@ export default function AdminPage() {
                       </button>
                     )}
                   </div>
+                  {photocardErrorByStoryId[story.id] ? (
+                    <p className="mt-2 text-xs font-semibold text-red-700">
+                      {photocardErrorByStoryId[story.id]}
+                    </p>
+                  ) : null}
                 </article>
               ))}
             </div>
