@@ -155,9 +155,9 @@ export default async function NewsArticlePage({
           </div>
         </article>
 
-        <aside className="order-first space-y-4 lg:order-last">
-          <CreatePhotocardAction article={article} />
+        <aside className="order-last space-y-4 lg:order-last">
           <PrintShareActions title={article.title} printUrl={printUrl} />
+          <CreatePhotocardAction article={article} />
 
           <section className="paper-surface rounded-2xl p-4 print-hidden sm:p-5">
             <h2 className="font-display text-2xl text-stone-900">

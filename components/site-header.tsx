@@ -165,7 +165,7 @@ export function SiteHeader() {
           <div className="flex shrink-0 flex-col items-end gap-2 text-right">
             <p
               suppressHydrationWarning
-              className="hidden text-[10px] font-semibold tracking-widest text-stone-700 uppercase md:block md:text-xs"
+              className="hidden text-[10px] font-semibold tracking-widest text-stone-700 uppercase md:block md:text-xs lg:text-xs"
             >
               {editionTimestamp}
             </p>
@@ -177,38 +177,25 @@ export function SiteHeader() {
             </p>
 
             <div className="flex items-center gap-2 lg:hidden">
-              <Link
-                href="/news"
-                onClick={() => setMenuOpen(false)}
-                className="inline-flex min-h-9 items-center rounded-full border border-stone-500 bg-stone-50 px-2.5 py-1.5 text-[11px] font-semibold text-stone-900 shadow-sm transition hover:bg-stone-100"
-              >
-                All News
-              </Link>
-              {supabase && isAuthenticated ? (
-                <Link
-                  href="/admin"
-                  onClick={() => setMenuOpen(false)}
-                  className="inline-flex min-h-9 items-center rounded-full border border-stone-400 px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
-                >
-                  Admin
-                </Link>
-              ) : (
-                <Link
-                  href="/auth"
-                  onClick={() => setMenuOpen(false)}
-                  className="inline-flex min-h-9 items-center rounded-full border border-stone-500 bg-stone-50 px-2.5 py-1.5 text-[11px] font-semibold text-stone-900 shadow-sm transition hover:bg-stone-100"
-                >
-                  Sign In
-                </Link>
-              )}
-
               <button
                 type="button"
                 onClick={() => setMenuOpen((previous) => !previous)}
-                className="inline-flex min-h-9 items-center rounded-full border border-stone-400 px-3 py-1.5 text-[11px] font-semibold tracking-wide text-stone-700 uppercase transition hover:bg-stone-900 hover:text-stone-50"
+                className="flex items-center gap-1.5 rounded-full border border-stone-600 bg-stone-900 px-3 py-2 text-xs font-semibold tracking-wide text-white uppercase transition hover:bg-stone-700"
                 aria-expanded={menuOpen}
                 aria-controls="mobile-smart-menu"
               >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {menuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
                 {menuOpen ? "Close" : "Menu"}
               </button>
             </div>
@@ -264,55 +251,72 @@ export function SiteHeader() {
         {menuOpen ? (
           <section
             id="mobile-smart-menu"
-            className="mt-2 rounded-2xl border border-stone-300 bg-[rgba(255,253,248,0.99)] p-2.5 shadow-md lg:hidden"
+            className="mt-2 rounded-2xl border border-stone-300 bg-[rgba(255,253,248,0.99)] p-2.5 shadow-md lg:hidden max-h-[70vh] overflow-y-auto"
           >
-            <div className="mb-2 flex items-center justify-between px-0.5">
-              <p className="text-[10px] font-semibold tracking-[0.16em] text-stone-600 uppercase">
-                Sections
-              </p>
+            <div className="mb-3 flex items-center justify-between border-b border-stone-200 pb-2">
+              <span className="font-display text-sm font-bold text-stone-900">
+                Daily Darpan
+              </span>
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-full border border-stone-300 px-2 py-1 text-[10px] font-semibold tracking-wide text-stone-700 uppercase"
+                className="rounded-full border border-stone-300 p-1.5 text-stone-600 transition hover:bg-stone-100"
               >
-                Close
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
-            <nav className="grid grid-cols-2 gap-1.5 text-[11px] font-semibold text-stone-700">
+            <nav className="space-y-1 text-sm font-semibold text-stone-900">
               <Link
                 href="/news"
                 onClick={() => setMenuOpen(false)}
-                className="col-span-2 inline-flex min-h-9 items-center justify-center rounded-full border border-stone-500 bg-stone-50 px-2.5 py-1.5 text-center text-stone-900 shadow-sm transition hover:bg-stone-100"
+                className="block rounded-lg border border-stone-300 px-3 py-2.5 transition hover:bg-stone-100"
               >
-                Visit All News
+                All News
               </Link>
               {categories.map((category) => (
                 <Link
                   key={category.slug}
                   href={`/category/${category.slug}`}
                   onClick={() => setMenuOpen(false)}
-                  className="inline-flex min-h-9 items-center justify-center rounded-full border border-stone-400 bg-stone-50 px-2.5 py-1.5 text-center transition hover:bg-stone-900 hover:text-stone-50"
+                  className="block rounded-lg border border-stone-300 px-3 py-2.5 transition hover:bg-stone-100"
                 >
                   {category.label}
                 </Link>
               ))}
             </nav>
 
-            {supabase && isAuthenticated ? (
-              <form
-                action="/api/auth/signout"
-                method="post"
-                className="mt-2 border-t border-dashed border-stone-300 pt-2"
-              >
-                <button
-                  type="submit"
-                  className="inline-flex min-h-9 w-full items-center justify-center rounded-full border border-stone-400 px-3 py-1.5 text-[11px] font-semibold text-stone-700 transition hover:bg-stone-900 hover:text-stone-50"
+            <div className="mt-3 border-t border-stone-200 pt-3">
+              {supabase && isAuthenticated ? (
+                <>
+                  <Link
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="block rounded-lg border border-stone-400 px-3 py-2.5 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                  >
+                    Admin Dashboard
+                  </Link>
+                  <form action="/api/auth/signout" method="post">
+                    <button
+                      type="submit"
+                      className="w rounded-lg border border-stone-400 px-3 py-2.5 text-left text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                    >
+                      Sign Out
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link
+                  href="/auth"
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:opacity-90"
                 >
-                  Sign out
-                </button>
-              </form>
-            ) : null}
+                  Sign In
+                </Link>
+              )}
+            </div>
           </section>
         ) : null}
       </div>
