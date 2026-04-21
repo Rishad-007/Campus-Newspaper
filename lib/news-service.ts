@@ -264,14 +264,18 @@ export async function getPublicCategoryMap() {
 
     const { data, error } = await supabase
       .from("categories")
-      .select("slug, name_en")
+      .select("slug, name_en, name_bn")
       .order("name_en", { ascending: true });
 
     if (error || !data) {
       return [];
     }
 
-    return data.map((item) => ({ slug: item.slug, label: item.name_en }));
+    return data.map((item) => ({
+      slug: item.slug,
+      label: item.name_bn || item.name_en,
+      labelEn: item.name_en,
+    }));
   } catch {
     return [];
   }

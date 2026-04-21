@@ -2,10 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { getCategoryMap } from "@/lib/mock-news";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+type CategoryItem = {
+  slug: string;
+  label: string;
+};
 
 function formatEditionTimestamp(date: Date) {
   const dayLabel = new Intl.DateTimeFormat("en-GB", {
@@ -43,7 +47,7 @@ function formatCompactEditionTimestamp(date: Date) {
 }
 
 export function SiteHeader() {
-  const categories = getCategoryMap();
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const supabase = useMemo<SupabaseClient | null>(() => {
@@ -59,6 +63,25 @@ export function SiteHeader() {
   }, []);
   const [editionTimestamp, setEditionTimestamp] = useState("");
   const [compactEditionTimestamp, setCompactEditionTimestamp] = useState("");
+
+  useEffect(() => {
+    async function loadCategories() {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from("categories")
+        .select("slug, name_en, name_bn")
+        .order("name_en", { ascending: true });
+      if (data) {
+        setCategories(
+          data.map((c) => ({
+            slug: c.slug,
+            label: c.name_bn || c.name_en,
+          })),
+        );
+      }
+    }
+    loadCategories();
+  }, [supabase]);
 
   useEffect(() => {
     const updateTimestamps = () => {

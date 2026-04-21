@@ -2119,7 +2119,7 @@ export default function AdminPage() {
                 >
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.name_en}
+                      {category.name_bn || category.name_en}
                     </option>
                   ))}
                 </select>
