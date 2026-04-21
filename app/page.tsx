@@ -15,7 +15,7 @@ export default async function Home() {
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
         <section className="paper-surface rounded-2xl p-5 sm:p-6">
           <h1 className="font-display text-3xl text-stone-900 sm:text-5xl">
-            Daily Darpan
+            Daily BRUR
           </h1>
           <p className="mt-3 text-sm text-stone-700">
             No published news yet. The editorial desk is preparing updates.

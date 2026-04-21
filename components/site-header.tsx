@@ -138,7 +138,7 @@ export function SiteHeader() {
         <div className="flex items-start justify-between gap-3 lg:gap-5">
           <div className="min-w-0">
             <p className="hidden text-[10px] tracking-[0.16em] text-stone-600 uppercase sm:block sm:text-xs">
-              Daily Edition • Bangladesh • Trusted Local Reporting
+              Daily Edition • Begum Rokeya University
             </p>
             <Link
               href="/"
@@ -155,10 +155,10 @@ export function SiteHeader() {
                 <circle cx="11" cy="11" r="7" />
                 <path d="m20 20-3.5-3.5" />
               </svg>
-              Daily Darpan
+              Daily BRUR
             </Link>
             <p className="mt-1 text-[10px] tracking-[0.08em] text-stone-600 uppercase sm:mt-2 sm:text-xs lg:text-sm">
-              The bilingual digital newspaper
+              Campus newspaper of Begum Rokeya University, Rangpur
             </p>
           </div>
 
@@ -255,7 +255,7 @@ export function SiteHeader() {
           >
             <div className="mb-3 flex items-center justify-between border-b border-stone-200 pb-2">
               <span className="font-display text-sm font-bold text-stone-900">
-                Daily Darpan
+                Daily BRUR
               </span>
               <button
                 type="button"

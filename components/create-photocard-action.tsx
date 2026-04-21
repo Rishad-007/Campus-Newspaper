@@ -320,11 +320,11 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
   ctx.textBaseline = "top";
   ctx.fillStyle = "#fffdf7";
   ctx.font = `700 52px ${titleFontFamily}`;
-  ctx.fillText("Daily Darpan", headerChipX + 80, headerChipY + 15);
+  ctx.fillText("Daily BRUR", headerChipX + 80, headerChipY + 15);
   ctx.font = `500 20px ${bodyFontFamily}`;
   ctx.fillStyle = "rgba(255,253,247,0.8)";
   ctx.fillText(
-    "Bilingual Newsprint Edition",
+    "Campus Edition",
     headerChipX + 80,
     headerChipY + 76,
   );

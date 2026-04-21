@@ -76,7 +76,7 @@ export default async function NewsArticlePage({
             <div className="print-brand-row">
               <div>
                 <p className="font-display text-3xl font-bold tracking-wide">
-                  Daily Darpan
+                  Daily BRUR
                 </p>
                 <p className="text-xs tracking-[0.14em] uppercase text-stone-700">
                   Bilingual Newsprint Edition
@@ -90,7 +90,7 @@ export default async function NewsArticlePage({
 
             <div className="mt-3 flex items-center justify-between border-t border-b border-black py-2 text-[10px] tracking-[0.16em] uppercase text-stone-700">
               <span>{article.categoryLabel}</span>
-              <span>Printed from Daily Darpan</span>
+              <span>Printed from Daily BRUR</span>
               <span>
                 {article.locale === "bn" ? "বাংলা সংস্করণ" : "English Edition"}
               </span>

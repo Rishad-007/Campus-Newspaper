@@ -11,7 +11,7 @@ export function SiteFooter() {
               Built By
             </p>
             <h2 className="font-display mt-2 text-2xl text-stone-900">
-              Daily Darpan Tech Desk
+              Daily BRUR Team
             </h2>
             <p className="mt-2 text-sm leading-6 text-stone-700">
               This newsroom portal was designed and developed by
@@ -89,7 +89,7 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-dashed border-stone-400/90 px-4 py-3 text-center text-xs text-stone-600 sm:px-6 lg:px-8">
-        © {new Date().getFullYear()} Daily Darpan. All rights reserved.
+        © {new Date().getFullYear()} Daily BRUR. All rights reserved.
       </div>
     </footer>
   );

@@ -24,8 +24,8 @@ const banglaBody = Noto_Serif_Bengali({
 });
 
 export const metadata: Metadata = {
-  title: "Daily Darpan",
-  description: "Responsive bilingual newspaper UI prototype built with Next.js",
+  title: "Daily BRUR",
+  description: "Campus newspaper of Begum Rokeya University, Rangpur",
 };
 
 export default function RootLayout({

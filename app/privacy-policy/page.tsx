@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
             1. Scope and Purpose
           </h2>
           <p className="mt-2">
-            This Privacy Policy and Legal Disclaimer applies to the Daily Darpan
+            This Privacy Policy and Legal Disclaimer applies to the Daily BRUR
             website, including public pages, newsroom workflows, authentication
             features, and content publication systems.
           </p>
