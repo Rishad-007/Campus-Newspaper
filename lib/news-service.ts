@@ -48,9 +48,11 @@ type ArticleRow = {
   profiles:
     | {
         full_name: string;
+        hide_byline?: boolean | null;
       }
     | {
         full_name: string;
+        hide_byline?: boolean | null;
       }[]
     | null;
 };
@@ -85,6 +87,8 @@ function storyFromRow(row: ArticleRow, tags: string[]): PublicStory {
       : (category?.name_en ?? "General");
 
   const publishedAt = row.published_at ?? row.created_at;
+  const shouldHideByline = Boolean(profile?.hide_byline);
+  const authorName = profile?.full_name?.trim();
 
   return {
     id: row.id,
@@ -99,7 +103,7 @@ function storyFromRow(row: ArticleRow, tags: string[]): PublicStory {
     category: category?.slug ?? "general",
     categoryLabel,
     tags,
-    author: profile?.full_name ?? "Staff Reporter",
+    author: shouldHideByline ? "Staff Reporter" : (authorName || "Staff Reporter"),
     authorId: row.author_id,
     publishedAt,
     status: row.status,
@@ -134,7 +138,7 @@ async function fetchPublishedArticles(filters?: {
   let query = supabase
     .from("articles")
     .select(
-      "id, locale, title, slug, excerpt, body, hero_image_url, author_id, category_id, published_at, created_at, placement, status, categories:category_id(slug, name_en, name_bn), profiles:author_id(full_name)",
+      "id, locale, title, slug, excerpt, body, hero_image_url, author_id, category_id, published_at, created_at, placement, status, categories:category_id(slug, name_en, name_bn), profiles:author_id(full_name, hide_byline)",
     )
     .eq("status", "published")
     .order("published_at", { ascending: false, nullsFirst: false })
@@ -155,7 +159,38 @@ async function fetchPublishedArticles(filters?: {
     query = query.in("id", filters.articleIds);
   }
 
-  const { data: articleRows, error } = await query;
+  let { data: articleRows, error } = await query;
+
+  // Backward-compatible fallback for environments where hide_byline is not added yet.
+  if (error?.message?.includes("hide_byline")) {
+    let fallbackQuery = supabase
+      .from("articles")
+      .select(
+        "id, locale, title, slug, excerpt, body, hero_image_url, author_id, category_id, published_at, created_at, placement, status, categories:category_id(slug, name_en, name_bn), profiles:author_id(full_name)",
+      )
+      .eq("status", "published")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false });
+
+    if (filters?.slug) {
+      fallbackQuery = fallbackQuery.eq("slug", filters.slug);
+    }
+
+    if (categoryId) {
+      fallbackQuery = fallbackQuery.eq("category_id", categoryId);
+    }
+
+    if (filters?.articleIds) {
+      if (filters.articleIds.length === 0) {
+        return [] as PublicStory[];
+      }
+      fallbackQuery = fallbackQuery.in("id", filters.articleIds);
+    }
+
+    const fallbackResult = await fallbackQuery;
+    articleRows = fallbackResult.data as typeof articleRows;
+    error = fallbackResult.error;
+  }
 
   if (error || !articleRows || articleRows.length === 0) {
     return [] as PublicStory[];

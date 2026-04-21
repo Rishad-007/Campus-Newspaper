@@ -79,7 +79,7 @@ export default async function NewsArticlePage({
                   Daily BRUR
                 </p>
                 <p className="text-xs tracking-[0.14em] uppercase text-stone-700">
-                  Bilingual Newsprint Edition
+                   Newsprint Edition
                 </p>
               </div>
               <div className="text-right text-xs tracking-[0.14em] uppercase text-stone-700">
@@ -92,7 +92,7 @@ export default async function NewsArticlePage({
               <span>{article.categoryLabel}</span>
               <span>Printed from Daily BRUR</span>
               <span>
-                {article.locale === "bn" ? "বাংলা সংস্করণ" : "English Edition"}
+                {article.locale === "en" ? "বাংলা সংস্করণ" : "English Edition"}
               </span>
             </div>
           </div>

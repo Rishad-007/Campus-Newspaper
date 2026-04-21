@@ -19,6 +19,7 @@ export type Database = {
           full_name: string;
           email: string;
           role: "owner" | "editor" | "sub-editor" | "writer";
+          hide_byline: boolean;
           requested_role: "editor" | "writer" | null;
           access_request_status: "none" | "pending" | "rejected";
           access_request_updated_at: string | null;
@@ -30,6 +31,7 @@ export type Database = {
           full_name: string;
           email: string;
           role: "owner" | "editor" | "sub-editor" | "writer";
+          hide_byline: boolean;
           requested_role: "editor" | "writer" | null;
           access_request_status: "none" | "pending" | "rejected";
           access_request_updated_at: string | null;
@@ -41,6 +43,7 @@ export type Database = {
           full_name: string;
           email: string;
           role: "owner" | "editor" | "sub-editor" | "writer";
+          hide_byline: boolean;
           requested_role: "editor" | "writer" | null;
           access_request_status: "none" | "pending" | "rejected";
           access_request_updated_at: string | null;

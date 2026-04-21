@@ -29,6 +29,8 @@ What this does:
 5. every later user becomes `writer`
 6. Enables and configures RLS policies.
 
+If you already have a live Supabase database, also run [supabase/migrations/20260422_add_hide_byline.sql](supabase/migrations/20260422_add_hide_byline.sql) after the base schema so the writer byline toggle works.
+
 ### 4. Add app environment keys
 
 1. Open Project Settings -> API.
@@ -68,3 +70,15 @@ Expected:
 
 1. First row role = `owner`
 2. Later rows default = `writer` unless owner changes role
+
+## 8. Writer Byline Toggle Migration
+
+If public articles show a schema cache error when hiding a writer name, run this SQL in Supabase:
+
+```sql
+alter table public.profiles
+add column if not exists hide_byline boolean not null default false;
+
+update public.profiles
+set hide_byline = coalesce(hide_byline, false);
+```

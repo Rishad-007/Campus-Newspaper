@@ -96,6 +96,11 @@ function titleCaseRole(role: UserRole) {
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
+function getBylineLabel(profile: ProfileRow | null) {
+  if (!profile) return "Staff Reporter";
+  return profile.hide_byline ? "Staff Reporter" : profile.full_name;
+}
+
 function formatDate(dateISO: string) {
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
@@ -329,7 +334,7 @@ export default function AdminPage() {
     const profilesResult = await supabaseClient
       .from("profiles")
       .select(
-        "id, full_name, email, role, requested_role, access_request_status, access_request_updated_at",
+        "id, full_name, email, role, hide_byline, requested_role, access_request_status, access_request_updated_at",
       )
       .order("created_at", { ascending: true });
 
@@ -342,6 +347,7 @@ export default function AdminPage() {
       profiles = (fallbackProfilesResult.data ?? []).map(
         (profile: Pick<ProfileRow, "id" | "full_name" | "email" | "role">) => ({
           ...profile,
+          hide_byline: false,
           requested_role: null,
           access_request_status: "none",
           access_request_updated_at: null,
@@ -791,6 +797,70 @@ export default function AdminPage() {
 
     setPasswordDraft("");
     setNotice("Password changed successfully.");
+  }
+
+  async function setMyBylineVisibility(hideByline: boolean) {
+    if (!currentUser) return;
+
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    const { error: updateError } = await supabaseClient
+      .from("profiles")
+      .update({ hide_byline: hideByline })
+      .eq("id", currentUser.id);
+
+    setSaving(false);
+
+    if (updateError) {
+      setError(
+        updateError.message.includes("hide_byline")
+          ? "Your database is missing the hide_byline column. Run supabase/migrations/20260422_add_hide_byline.sql in Supabase SQL Editor, then try again."
+          : updateError.message,
+      );
+      return;
+    }
+
+    setNotice(
+      hideByline
+        ? "Byline hidden. Public stories now show Staff Reporter."
+        : "Byline visible. Public stories now show your name.",
+    );
+    await loadData();
+  }
+
+  async function setSelectedUserBylineVisibility(hideByline: boolean) {
+    if (!canManageUsers || !selectedUser || selectedUser.role !== "writer") {
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    const { error: updateError } = await supabaseClient
+      .from("profiles")
+      .update({ hide_byline: hideByline })
+      .eq("id", selectedUser.id);
+
+    setSaving(false);
+
+    if (updateError) {
+      setError(
+        updateError.message.includes("hide_byline")
+          ? "Your database is missing the hide_byline column. Run supabase/migrations/20260422_add_hide_byline.sql in Supabase SQL Editor, then try again."
+          : updateError.message,
+      );
+      return;
+    }
+
+    setNotice(
+      hideByline
+        ? "Selected writer now displays as Staff Reporter."
+        : "Selected writer byline is now visible.",
+    );
+    await loadData();
   }
 
   async function addJournalist(event: FormEvent) {
@@ -1603,6 +1673,35 @@ export default function AdminPage() {
                   </p>
                 )}
 
+                {selectedUser?.role === "writer" && (
+                  <div className="mt-4 rounded-lg border border-dashed border-stone-400 bg-stone-50 p-3">
+                    <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
+                      Writer Byline Visibility
+                    </p>
+                    <p className="mt-2 text-sm text-stone-700">
+                      Public display name: {getBylineLabel(selectedUser)}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={saving || selectedUser.hide_byline}
+                        onClick={() => void setSelectedUserBylineVisibility(true)}
+                        className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Hide Name (Staff Reporter)
+                      </button>
+                      <button
+                        type="button"
+                        disabled={saving || !selectedUser.hide_byline}
+                        onClick={() => void setSelectedUserBylineVisibility(false)}
+                        className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Show Real Name
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {isSelectedUserOwner && (
                   <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                     Owner account is protected. Role change is disabled.
@@ -2086,6 +2185,33 @@ export default function AdminPage() {
             <h2 className="font-display text-2xl text-stone-900">
               {editingStoryId ? "Edit Story" : "Create Story"}
             </h2>
+
+            <div className="mt-4 rounded-xl border border-dashed border-stone-400 bg-stone-50 p-4">
+              <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
+                Byline Visibility
+              </p>
+              <p className="mt-2 text-sm text-stone-700">
+                Public display name: {getBylineLabel(currentUser)}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={saving || currentUser.hide_byline}
+                  onClick={() => void setMyBylineVisibility(true)}
+                  className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Hide Name (Staff Reporter)
+                </button>
+                <button
+                  type="button"
+                  disabled={saving || !currentUser.hide_byline}
+                  onClick={() => void setMyBylineVisibility(false)}
+                  className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Show Real Name
+                </button>
+              </div>
+            </div>
 
             <form
               className="mt-4 grid gap-3"

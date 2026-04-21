@@ -1,13 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FaDownload } from "react-icons/fa6";
 import { savePendingPhotocardCrop } from "@/lib/photocard-crop-session";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import type { PublicStory } from "@/lib/news-service";
-import type { UserRole } from "@/lib/types/admin";
 
 type CreatePhotocardActionProps = {
   article: Pick<
@@ -25,11 +22,6 @@ type CreatePhotocardActionProps = {
   >;
 };
 
-type ProfilePreview = {
-  id: string;
-  role: UserRole;
-};
-
 export type PhotocardStoryInput = Pick<
   PublicStory,
   | "id"
@@ -44,7 +36,6 @@ export type PhotocardStoryInput = Pick<
   | "status"
 >;
 
-const EDITORIAL_ROLES: UserRole[] = ["owner", "editor", "sub-editor"];
 export const PHOTOCARD_WIDTH = 1080;
 export const PHOTOCARD_HEIGHT = 1080;
 

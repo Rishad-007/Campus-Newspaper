@@ -10,6 +10,7 @@ export type ProfileRow = {
   full_name: string;
   email: string;
   role: UserRole;
+  hide_byline: boolean;
   requested_role: RequestedRole | null;
   access_request_status: AccessRequestStatus;
   access_request_updated_at: string | null;
@@ -47,6 +48,7 @@ export type ArticleRow = {
     | null;
   profiles?: {
     full_name: string;
+    hide_byline?: boolean | null;
   } | null;
 };
 

@@ -9,12 +9,16 @@ create table if not exists public.profiles (
   full_name text not null,
   email text not null unique,
   role text not null default 'writer' check (role in ('owner', 'editor', 'sub-editor', 'writer')),
+  hide_byline boolean not null default false,
   requested_role text check (requested_role in ('writer', 'editor')),
   access_request_status text not null default 'none' check (access_request_status in ('none', 'pending', 'rejected')),
   access_request_updated_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+add column if not exists hide_byline boolean not null default false;
 
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
