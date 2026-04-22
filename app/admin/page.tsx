@@ -5,6 +5,22 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaDownload } from "react-icons/fa6";
+import {
+  FiGrid,
+  FiUsers,
+  FiEdit,
+  FiClock,
+  FiMapPin,
+  FiFileText,
+  FiPlus,
+  FiRefreshCw,
+  FiCheckCircle,
+  FiFile,
+  FiUserPlus,
+  FiTrendingUp,
+  FiLayout,
+  FiList,
+} from "react-icons/fi";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createPhotocardFileName,
@@ -77,13 +93,13 @@ const ROLE_OPTIONS: Array<{ label: string; value: UserRole }> = [
   { label: "Writer / Journalist", value: "writer" },
 ];
 
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: "overview", label: "Overview" },
-  { key: "users", label: "Users" },
-  { key: "journalists", label: "Journalists" },
-  { key: "pending", label: "Pending Queue" },
-  { key: "placement", label: "Front Page Placement" },
-  { key: "my-stories", label: "My Stories" },
+const TABS: Array<{ key: TabKey; label: string; icon: React.ElementType }> = [
+  { key: "overview", label: "Overview", icon: FiGrid },
+  { key: "users", label: "Users", icon: FiUsers },
+  { key: "journalists", label: "Journalists", icon: FiEdit },
+  { key: "pending", label: "Pending", icon: FiClock },
+  { key: "placement", label: "Placement", icon: FiMapPin },
+  { key: "my-stories", label: "My Stories", icon: FiFileText },
 ];
 
 const MAX_SOURCE_IMAGE_BYTES = 6 * 1024 * 1024;
@@ -1417,117 +1433,239 @@ export default function AdminPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
-      <header className="paper-surface rounded-2xl p-5 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
-              Live Role Workspace
-            </p>
-            <h1 className="font-display mt-2 text-3xl text-stone-900 sm:text-5xl">
-              Admin Newsroom Desk
-            </h1>
-            <p className="mt-2 text-sm text-stone-700">
-              Signed in as {currentUser.full_name} (
-              {titleCaseRole(currentUser.role)})
-            </p>
+      <header className="paper-surface rounded-2xl p-4 sm:p-5">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.12em] text-stone-500 uppercase">
+                Admin Workspace
+              </p>
+              <h1 className="font-display mt-1 text-2xl text-stone-900 sm:text-4xl">
+                Newsroom Desk
+              </h1>
+              <p className="mt-1 text-sm text-stone-600">
+                {currentUser.full_name} · {titleCaseRole(currentUser.role)}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void loadData()}
+                disabled={saving}
+                className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 hover:shadow-md disabled:opacity-60"
+              >
+                <FiRefreshCw className={`text-sm ${saving ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 hover:shadow-md"
+              >
+                <span className="hidden sm:inline">Sign Out</span>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+              <Link
+                href="/"
+                className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 hover:shadow-md"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="hidden sm:inline">Back</span>
+              </Link>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void loadData()}
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 min-h-11 sm:min-h-10"
-            >
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 min-h-11 sm:min-h-10"
-            >
-              Sign Out
-            </button>
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 sm:min-h-10"
-            >
-              Back to site
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {availableTabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                tab.key === effectiveActiveTab
-                  ? "bg-(--accent) text-white"
-                  : "border border-stone-400 text-stone-700"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <nav className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+            {availableTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = tab.key === effectiveActiveTab;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`group flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold transition-all sm:text-sm sm:px-3 ${
+                    isActive
+                      ? "bg-(--accent) text-white shadow-md"
+                      : "bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900"
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? "text-white" : "text-stone-500 group-hover:text-stone-700"}`} />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
         {error && (
-          <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             {error}
           </p>
         )}
 
         {notice && (
-          <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             {notice}
           </p>
         )}
       </header>
 
       {effectiveActiveTab === "overview" && (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="paper-surface rounded-2xl p-5">
-            <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
-              Journalists
-            </p>
-            <p className="font-display mt-2 text-3xl text-stone-900">
-              {journalists.length}
+        <section className="grid grid-cols-3 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <article className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+            <div className="absolute top-0 left-0 h-1 w-full bg-rose-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100">
+                <FiUsers className="h-5 w-5 text-rose-600" />
+              </div>
+              <FiTrendingUp className="h-5 w-5 text-stone-300 opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+            <p className="mt-3 font-display text-3xl font-bold text-stone-900">{journalists.length}</p>
+            <p className="text-xs font-medium text-stone-500">Journalists</p>
+          </article>
+
+          <article className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+            <div className="absolute top-0 left-0 h-1 w-full bg-amber-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+                <FiClock className="h-5 w-5 text-amber-600" />
+              </div>
+              <FiTrendingUp className="h-5 w-5 text-stone-300 opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+            <p className="mt-3 font-display text-3xl font-bold text-stone-900">{pendingStories.length}</p>
+            <p className="text-xs font-medium text-stone-500">Pending News</p>
+          </article>
+
+          <article className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+            <div className="absolute top-0 left-0 h-1 w-full bg-emerald-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+                <FiCheckCircle className="h-5 w-5 text-emerald-600" />
+              </div>
+              <FiTrendingUp className="h-5 w-5 text-stone-300 opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+            <p className="mt-3 font-display text-3xl font-bold text-stone-900">{stories.filter((story) => story.status === "published").length}</p>
+            <p className="text-xs font-medium text-stone-500">Published</p>
+          </article>
+
+          <article className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+            <div className="absolute top-0 left-0 h-1 w-full bg-blue-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                <FiFile className="h-5 w-5 text-blue-600" />
+              </div>
+              <FiTrendingUp className="h-5 w-5 text-stone-300 opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+            <p className="mt-3 font-display text-3xl font-bold text-stone-900">{stories.filter((story) => story.status === "draft").length}</p>
+            <p className="text-xs font-medium text-stone-500">Drafts</p>
+          </article>
+
+          <article className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+            <div className="absolute top-0 left-0 h-1 w-full bg-violet-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100">
+                <FiUserPlus className="h-5 w-5 text-violet-600" />
+              </div>
+              <FiTrendingUp className="h-5 w-5 text-stone-300 opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+            <p className="mt-3 font-display text-3xl font-bold text-stone-900">{pendingAccessRequests.length}</p>
+            <p className="text-xs font-medium text-stone-500">Access Requests</p>
+          </article>
+        </section>
+      )}
+
+      {effectiveActiveTab === "overview" && (
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <div className="flex items-center gap-2">
+              <FiLayout className="h-4 w-4 text-(--accent)" />
+              <span className="text-xs font-semibold text-stone-600">LEAD STORY</span>
+            </div>
+            <p className="mt-2 font-medium text-stone-900">
+              {stories.find((s) => s.placement === "lead")?.title ?? "Not set"}
             </p>
           </article>
-          <article className="paper-surface rounded-2xl p-5">
-            <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
-              Pending News
-            </p>
-            <p className="font-display mt-2 text-3xl text-stone-900">
-              {pendingStories.length}
-            </p>
-          </article>
-          <article className="paper-surface rounded-2xl p-5">
-            <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
-              Published
-            </p>
-            <p className="font-display mt-2 text-3xl text-stone-900">
-              {stories.filter((story) => story.status === "published").length}
+
+          <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <div className="flex items-center gap-2">
+              <FiList className="h-4 w-4 text-(--accent)" />
+              <span className="text-xs font-semibold text-stone-600">FRONTLINE BRIEFS</span>
+            </div>
+            <p className="mt-2 font-medium text-stone-900">
+              {stories.filter((s) => s.placement === "brief").length}/6
             </p>
           </article>
-          <article className="paper-surface rounded-2xl p-5">
-            <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
-              Drafts
-            </p>
-            <p className="font-display mt-2 text-3xl text-stone-900">
-              {stories.filter((story) => story.status === "draft").length}
-            </p>
-          </article>
-          <article className="paper-surface rounded-2xl p-5">
-            <p className="text-xs font-semibold tracking-[0.12em] text-stone-600 uppercase">
-              Pending Access
-            </p>
-            <p className="font-display mt-2 text-3xl text-stone-900">
-              {pendingAccessRequests.length}
+
+          <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <div className="flex items-center gap-2">
+              <FiClock className="h-4 w-4 text-(--accent)" />
+              <span className="text-xs font-semibold text-stone-600">LATEST</span>
+            </div>
+            <p className="mt-2 font-medium text-stone-900">
+              {stories.filter((s) => s.placement === "latest").length}/6
             </p>
           </article>
+
+          <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <div className="flex items-center gap-2">
+              <FiFileText className="h-4 w-4 text-(--accent)" />
+              <span className="text-xs font-semibold text-stone-600">TOTAL STORIES</span>
+            </div>
+            <p className="mt-2 font-medium text-stone-900">{stories.length}</p>
+          </article>
+        </section>
+      )}
+
+      {effectiveActiveTab === "overview" && canWrite && (
+        <section className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-6">
+          <h2 className="font-display text-xl text-stone-900">Quick Actions</h2>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("my-stories");
+                setEditingStoryId(null);
+                setWriterTitle("");
+                setWriterExcerpt("");
+                setWriterCategoryId(categories[0]?.id ?? "");
+                setWriterTags("");
+                setWriterBody("");
+                setWriterImageFile(null);
+                setWriterImagePreview("");
+              }}
+              className="flex items-center gap-2 rounded-xl bg-(--accent) px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:brightness-110 hover:shadow-lg"
+            >
+              <FiPlus className="h-4 w-4" />
+              New Story
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("pending")}
+              className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:bg-stone-50 hover:shadow-md"
+            >
+              <FiClock className="h-4 w-4" />
+              Review Pending ({pendingStories.length})
+            </button>
+            {canManagePlacement && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("placement")}
+                className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:bg-stone-50 hover:shadow-md"
+              >
+                <FiMapPin className="h-4 w-4" />
+                Manage Placement
+              </button>
+            )}
+          </div>
         </section>
       )}
 
