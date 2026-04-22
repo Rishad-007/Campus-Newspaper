@@ -111,6 +111,7 @@ function drawFittedParagraph({
   lineHeight,
   color,
   maxLines,
+  align = "left",
 }: {
   ctx: CanvasRenderingContext2D;
   text: string;
@@ -125,6 +126,7 @@ function drawFittedParagraph({
   lineHeight: number;
   color: string;
   maxLines: number;
+  align?: "left" | "center" | "right";
 }) {
   let chosenSize = minSize;
   let chosenLines = wrapText(ctx, text, maxWidth);
@@ -151,7 +153,15 @@ function drawFittedParagraph({
   ctx.textBaseline = "top";
 
   chosenLines.slice(0, maxLines).forEach((line, index) => {
-    ctx.fillText(line, x, y + index * chosenSize * lineHeight);
+    let lineX = x;
+    if (align === "center") {
+      const lineWidth = ctx.measureText(line).width;
+      lineX = x + (maxWidth - lineWidth) / 2;
+    } else if (align === "right") {
+      const lineWidth = ctx.measureText(line).width;
+      lineX = x + maxWidth - lineWidth;
+    }
+    ctx.fillText(line, lineX, y + index * chosenSize * lineHeight);
   });
 
   return chosenLines.length * chosenSize * lineHeight;
@@ -305,7 +315,7 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
   ctx.font = `700 23px ${bodyFontFamily}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("DD", headerChipX + 38, headerChipY + 58);
+  ctx.fillText("DB", headerChipX + 38, headerChipY + 58);
 
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
@@ -314,11 +324,7 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
   ctx.fillText("Daily BRUR", headerChipX + 80, headerChipY + 15);
   ctx.font = `500 20px ${bodyFontFamily}`;
   ctx.fillStyle = "rgba(255,253,247,0.8)";
-  ctx.fillText(
-    "Campus Edition",
-    headerChipX + 80,
-    headerChipY + 76,
-  );
+  ctx.fillText("Campus Edition", headerChipX + 80, headerChipY + 76);
 
   ctx.textAlign = "right";
   ctx.fillStyle = "#fffdf7";
@@ -380,6 +386,7 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
     lineHeight: 1.08,
     color: "#1c1712",
     maxLines: 3,
+    align: "center",
   });
 
   const subtitleY = textCardY + 24 + titleHeight + 14;
@@ -400,6 +407,19 @@ export async function generatePhotocardBlob(article: PhotocardStoryInput) {
     color: "rgba(35, 28, 22, 0.9)",
     maxLines: 4,
   });
+
+  const moreDetailsText = article.locale === "bn"
+    ? "আরো বিস্তারিত কমেন্টে..."
+    : "More details in comment...";
+  ctx.font = `500 18px ${bodyFontFamily}`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "bottom";
+  ctx.fillStyle = "rgba(35, 28, 22, 0.7)";
+  ctx.fillText(
+    moreDetailsText,
+    textCardX + textCardWidth - 30,
+    textCardY + textCardHeight - 24,
+  );
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
@@ -468,9 +488,7 @@ export function CreatePhotocardAction({ article }: CreatePhotocardActionProps) {
     return null;
   }
 
-  const buttonLabel = isGenerating
-    ? "Creating JPG..."
-    : "Download JPG";
+  const buttonLabel = isGenerating ? "Creating JPG..." : "Download JPG";
 
   const statusLabel =
     "Generate a square social photocard instantly from this published story. Login is not required.";

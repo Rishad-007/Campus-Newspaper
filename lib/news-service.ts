@@ -103,7 +103,9 @@ function storyFromRow(row: ArticleRow, tags: string[]): PublicStory {
     category: category?.slug ?? "general",
     categoryLabel,
     tags,
-    author: shouldHideByline ? "Staff Reporter" : (authorName || "Staff Reporter"),
+    author: shouldHideByline
+      ? "Staff Reporter"
+      : authorName || "Staff Reporter",
     authorId: row.author_id,
     publishedAt,
     status: row.status,

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 import { AutoPrintTrigger } from "@/components/auto-print-trigger";
 import { CreatePhotocardAction } from "@/components/create-photocard-action";
 import { PrintShareActions } from "@/components/print-share-actions";
@@ -10,6 +11,53 @@ type NewsPageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ print?: string }>;
 };
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://dailybrur.com";
+
+export async function generateMetadata({
+  params,
+}: NewsPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const article = await getPublicStoryBySlug(slug);
+
+  if (!article) {
+    return {
+      title: "Article Not Found",
+    };
+  }
+
+  const pageUrl = `${SITE_URL}/news/${article.slug}`;
+  const imageUrl = article.heroImage.startsWith("http")
+    ? article.heroImage
+    : `${SITE_URL}${article.heroImage}`;
+
+  return {
+    title: article.title,
+    description: article.excerpt,
+    openGraph: {
+      title: article.title,
+      description: article.excerpt,
+      url: pageUrl,
+      type: "article",
+      publishedTime: article.publishedAt,
+      authors: [article.author],
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt,
+      images: [imageUrl],
+    },
+  };
+}
 
 export default async function NewsArticlePage({
   params,
@@ -156,7 +204,7 @@ export default async function NewsArticlePage({
         </article>
 
         <aside className="order-last space-y-4 lg:order-last">
-          <PrintShareActions title={article.title} printUrl={printUrl} />
+          <PrintShareActions title={article.title} printUrl={printUrl} pageUrl={`${SITE_URL}/news/${article.slug}`} />
           <CreatePhotocardAction article={article} />
 
           <section className="paper-surface rounded-2xl p-4 print-hidden sm:p-5">

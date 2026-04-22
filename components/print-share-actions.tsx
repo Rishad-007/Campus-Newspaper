@@ -7,13 +7,14 @@ import { FaLink, FaPrint, FaXTwitter } from "react-icons/fa6";
 type PrintShareActionsProps = {
   title: string;
   printUrl?: string;
+  pageUrl?: string;
 };
 
-export function PrintShareActions({ title, printUrl }: PrintShareActionsProps) {
+export function PrintShareActions({ title, printUrl, pageUrl: propPageUrl }: PrintShareActionsProps) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
     "idle",
   );
-  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+  const pageUrl = propPageUrl ?? (typeof window !== "undefined" ? window.location.href : "");
   const canNativeShare =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
 

@@ -1685,7 +1685,9 @@ export default function AdminPage() {
                       <button
                         type="button"
                         disabled={saving || selectedUser.hide_byline}
-                        onClick={() => void setSelectedUserBylineVisibility(true)}
+                        onClick={() =>
+                          void setSelectedUserBylineVisibility(true)
+                        }
                         className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Hide Name (Staff Reporter)
@@ -1693,7 +1695,9 @@ export default function AdminPage() {
                       <button
                         type="button"
                         disabled={saving || !selectedUser.hide_byline}
-                        onClick={() => void setSelectedUserBylineVisibility(false)}
+                        onClick={() =>
+                          void setSelectedUserBylineVisibility(false)
+                        }
                         className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Show Real Name
