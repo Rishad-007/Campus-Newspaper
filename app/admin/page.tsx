@@ -223,6 +223,9 @@ export default function AdminPage() {
   const [photocardErrorByStoryId, setPhotocardErrorByStoryId] = useState<
     Record<string, string>
   >({});
+  const [pendingPlacements, setPendingPlacements] = useState<
+    Record<string, "none" | "lead" | "brief" | "latest">
+  >({});
 
   const journalists = useMemo(
     () => users.filter((user) => user.role === "writer"),
@@ -955,6 +958,7 @@ export default function AdminPage() {
         status: "published",
         rejection_reason: null,
         published_at: new Date().toISOString(),
+        placement: "latest",
       })
       .eq("id", storyId);
 
@@ -965,7 +969,7 @@ export default function AdminPage() {
       return;
     }
 
-    setNotice("Story published.");
+    setNotice("Story published and added to Latest.");
     await loadData();
   }
 
@@ -1073,37 +1077,69 @@ export default function AdminPage() {
     await loadData();
   }
 
-  async function setPlacement(
+  function setPendingPlacement(
     storyId: string,
     placement: "none" | "lead" | "brief" | "latest",
   ) {
     if (!canManagePlacement) return;
 
+    setPendingPlacements((prev) => ({
+      ...prev,
+      [storyId]: placement,
+    }));
+  }
+
+  async function saveAllPlacements() {
+    if (!canManagePlacement) return;
+    if (Object.keys(pendingPlacements).length === 0) {
+      setNotice("No changes to save.");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setNotice("");
 
-    if (placement === "lead") {
-      await supabaseClient
+    const entries = Object.entries(pendingPlacements);
+    const newLeadId = entries.find(([, p]) => p === "lead")?.[0];
+
+    for (const [storyId, placement] of entries) {
+      if (placement === "lead" && newLeadId !== storyId) {
+        continue;
+      }
+
+      const { error: updateError } = await supabaseClient
         .from("articles")
-        .update({ placement: "none" })
-        .eq("placement", "lead");
+        .update({ placement })
+        .eq("id", storyId);
+
+      if (updateError) {
+        setSaving(false);
+        setError(updateError.message);
+        return;
+      }
     }
 
-    const { error: updateError } = await supabaseClient
-      .from("articles")
-      .update({ placement })
-      .eq("id", storyId);
+    if (newLeadId) {
+      const leadStories = stories.filter(
+        (s) => s.placement === "lead" && s.id !== newLeadId,
+      );
+      for (const story of leadStories) {
+        await supabaseClient
+          .from("articles")
+          .update({ placement: "none" })
+          .eq("id", story.id);
+      }
+    }
 
     setSaving(false);
-
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
-
-    setNotice("Front page placement updated.");
+    setPendingPlacements({});
+    setNotice("Front page placement saved.");
     await loadData();
+  }
+
+  async function clearPendingPlacements() {
+    setPendingPlacements({});
   }
 
   async function saveOrUpdateWriterStory() {
@@ -2040,14 +2076,32 @@ export default function AdminPage() {
           </p>
 
           <div className="mt-4 rounded-xl border border-dashed border-stone-400 p-4 text-sm text-stone-700">
-            <p>Lead Story: {leadStory?.id ?? "Not selected"}</p>
-            <p className="mt-1">
-              Frontline Briefs:{" "}
-              {briefs.map((story) => story.id).join(", ") || "None"}
-            </p>
-            <p className="mt-1">
-              Latest: {latest.map((story) => story.id).join(", ") || "None"}
-            </p>
+            {(() => {
+              const effectiveLatest = stories
+                .filter((s) => (pendingPlacements[s.id] ?? s.placement) === "latest")
+                .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+                .slice(0, 6);
+              const effectiveBriefs = stories
+                .filter((s) => (pendingPlacements[s.id] ?? s.placement) === "brief")
+                .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+                .slice(0, 6);
+              const effectiveLead = stories.find(
+                (s) => (pendingPlacements[s.id] ?? s.placement) === "lead",
+              );
+              return (
+                <>
+                  <p>Lead Story: {effectiveLead?.title ?? "Not selected"}</p>
+                  <p className="mt-1">
+                    Frontline Briefs ({effectiveBriefs.length}/6):{" "}
+                    {effectiveBriefs.map((story) => story.title).join(", ") || "None"}
+                  </p>
+                  <p className="mt-1">
+                    Latest ({effectiveLatest.length}/6):{" "}
+                    {effectiveLatest.map((story) => story.title).join(", ") || "None"}
+                  </p>
+                </>
+              );
+            })()}
           </div>
 
           <div className="mt-5 grid gap-4">
@@ -2063,61 +2117,97 @@ export default function AdminPage() {
                     {story.authorName}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() =>
-                        void setPlacement(
-                          story.id,
-                          story.placement === "lead" ? "none" : "lead",
-                        )
-                      }
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        story.placement === "lead"
-                          ? "bg-(--accent) text-white"
-                          : "border border-stone-400 text-stone-700"
-                      }`}
-                    >
-                      Lead Story
-                    </button>
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() =>
-                        void setPlacement(
-                          story.id,
-                          story.placement === "brief" ? "none" : "brief",
-                        )
-                      }
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        story.placement === "brief"
-                          ? "bg-(--accent) text-white"
-                          : "border border-stone-400 text-stone-700"
-                      }`}
-                    >
-                      Frontline Briefs
-                    </button>
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() =>
-                        void setPlacement(
-                          story.id,
-                          story.placement === "latest" ? "none" : "latest",
-                        )
-                      }
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        story.placement === "latest"
-                          ? "bg-(--accent) text-white"
-                          : "border border-stone-400 text-stone-700"
-                      }`}
-                    >
-                      Latest
-                    </button>
+                    {(() => {
+                      const effectivePlacement =
+                        pendingPlacements[story.id] ?? story.placement;
+                      const isPending = story.id in pendingPlacements;
+                      return (
+                        <>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() =>
+                              setPendingPlacement(
+                                story.id,
+                                effectivePlacement === "lead" ? "none" : "lead",
+                              )
+                            }
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                              effectivePlacement === "lead"
+                                ? "bg-(--accent) text-white"
+                                : isPending
+                                  ? "border-2 border-amber-500 text-amber-700"
+                                  : "border border-stone-400 text-stone-700"
+                            }`}
+                          >
+                            Lead Story
+                          </button>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() =>
+                              setPendingPlacement(
+                                story.id,
+                                effectivePlacement === "brief" ? "none" : "brief",
+                              )
+                            }
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                              effectivePlacement === "brief"
+                                ? "bg-(--accent) text-white"
+                                : isPending
+                                  ? "border-2 border-amber-500 text-amber-700"
+                                  : "border border-stone-400 text-stone-700"
+                            }`}
+                          >
+                            Frontline Briefs
+                          </button>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() =>
+                              setPendingPlacement(
+                                story.id,
+                                effectivePlacement === "latest" ? "none" : "latest",
+                              )
+                            }
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                              effectivePlacement === "latest"
+                                ? "bg-(--accent) text-white"
+                                : isPending
+                                  ? "border-2 border-amber-500 text-amber-700"
+                                  : "border border-stone-400 text-stone-700"
+                            }`}
+                          >
+                            Latest
+                          </button>
+                        </>
+                      );
+                    })()}
                   </div>
                 </article>
               ))}
           </div>
+
+          {Object.keys(pendingPlacements).length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void saveAllPlacements()}
+                className="rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Save Placement
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => clearPendingPlacements()}
+                className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel Changes
+              </button>
+            </div>
+          )}
 
           <div className="mt-8 border-t border-dashed border-stone-400 pt-6">
             <h3 className="font-display text-2xl text-stone-900">

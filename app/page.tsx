@@ -7,8 +7,12 @@ export default async function Home() {
   const leadStory = stories.find((story) => story.placement === "lead") ?? null;
   const topStories = stories
     .filter((story) => story.placement === "brief")
-    .slice(0, 3);
-  const latestReports = stories.filter((story) => story.placement === "latest");
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    .slice(0, 6);
+  const latestReports = stories
+    .filter((story) => story.placement === "latest")
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    .slice(0, 6);
 
   if (stories.length === 0) {
     return (
@@ -103,6 +107,15 @@ export default async function Home() {
                   key={story.id}
                   className="border-b border-stone-200 pb-4 last:border-b-0"
                 >
+                  <div className="mb-2 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
+                    <Image
+                      src={story.heroImage}
+                      alt={story.title}
+                      width={640}
+                      height={360}
+                      className="h-24 w-full object-cover"
+                    />
+                  </div>
                   <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
                     {story.categoryLabel}
                   </p>
