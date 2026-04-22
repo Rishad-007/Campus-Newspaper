@@ -82,32 +82,32 @@ export default async function AllNewsPage({
         </div>
       </header>
 
-      <section className="paper-surface rounded-2xl p-5 sm:p-6">
-        <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" method="get">
-          <label className="grid gap-1 text-sm text-stone-700">
-            <span className="text-xs font-semibold tracking-[0.12em] uppercase">
-              Sort By Date
+      <section className="paper-surface rounded-2xl p-3 sm:p-6">
+        <form className="flex flex-wrap gap-2 sm:grid sm:grid-cols-5 sm:gap-3" method="get">
+          <label className="min-w-[calc(50%-4px)] flex-1 grid gap-1 text-sm text-stone-700 sm:col-span-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide sm:text-xs sm:tracking-[0.12em]">
+              Sort
             </span>
             <select
               name="sort"
               defaultValue={sortMode}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
+              className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-(--accent) sm:px-3 sm:py-2 sm:text-sm"
             >
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
             </select>
           </label>
 
-          <label className="grid gap-1 text-sm text-stone-700">
-            <span className="text-xs font-semibold tracking-[0.12em] uppercase">
+          <label className="min-w-[calc(50%-4px)] flex-1 grid gap-1 text-sm text-stone-700 sm:col-span-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide sm:text-xs sm:tracking-[0.12em]">
               Category
             </span>
             <select
               name="category"
               defaultValue={category}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
+              className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-(--accent) sm:px-3 sm:py-2 sm:text-sm"
             >
-              <option value="all">All categories</option>
+              <option value="all">All</option>
               {categories.map((item) => (
                 <option key={item.slug} value={item.slug}>
                   {item.label}
@@ -116,42 +116,44 @@ export default async function AllNewsPage({
             </select>
           </label>
 
-          <label className="grid gap-1 text-sm text-stone-700">
-            <span className="text-xs font-semibold tracking-[0.12em] uppercase">
-              From Date
+          <label className="min-w-[calc(50%-4px)] grid gap-1 text-sm text-stone-700 sm:col-span-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide sm:text-xs sm:tracking-[0.12em]">
+              From
             </span>
             <input
               type="date"
               name="from"
               defaultValue={params.from ?? ""}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
+              className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-(--accent) sm:px-3 sm:py-2 sm:text-sm"
             />
           </label>
 
-          <label className="grid gap-1 text-sm text-stone-700">
-            <span className="text-xs font-semibold tracking-[0.12em] uppercase">
-              To Date
+          <label className="min-w-[calc(50%-4px)] grid gap-1 text-sm text-stone-700 sm:col-span-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide sm:text-xs sm:tracking-[0.12em]">
+              To
             </span>
             <input
               type="date"
               name="to"
               defaultValue={params.to ?? ""}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none ring-(--accent) focus:ring"
+              className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-(--accent) sm:px-3 sm:py-2 sm:text-sm"
             />
           </label>
 
-          <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-1">
+          <div className="flex min-w-[calc(50%-4px)] items-end gap-1.5 sm:col-span-1 sm:gap-2">
             <button
               type="submit"
-              className="min-h-11 rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white sm:min-h-10"
+              className="flex-1 rounded-lg bg-(--accent) px-3 py-1.5 text-xs font-semibold text-white sm:flex-none sm:rounded-full sm:px-4 sm:py-2 sm:text-sm"
             >
               Apply
             </button>
             <Link
               href="/news"
-              className="inline-flex min-h-11 items-center rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 sm:min-h-10"
+              className="flex items-center justify-center rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-600 sm:flex-none sm:rounded-full sm:px-3 sm:py-2 sm:text-sm"
             >
-              Reset
+              <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
             </Link>
           </div>
         </form>
