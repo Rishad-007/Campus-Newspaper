@@ -286,11 +286,16 @@ export default function AdminPage() {
   const canManagePlacement = canManageJournalists;
   const canManageTags = canManageJournalists;
   const canWrite =
-    currentUser?.role === "writer" || currentUser?.role === "owner";
+    currentUser?.role === "writer" ||
+    currentUser?.role === "editor" ||
+    currentUser?.role === "sub-editor" ||
+    currentUser?.role === "owner";
 
   const availableTabs = useMemo(() => {
     if (!currentUser) return [];
-    if (currentUser.role === "owner") return TABS;
+    if (currentUser.role === "owner" || currentUser.role === "editor" || currentUser.role === "sub-editor") {
+      return TABS;
+    }
     if (currentUser.role === "writer") {
       return TABS.filter((tab) => ["overview", "my-stories"].includes(tab.key));
     }
