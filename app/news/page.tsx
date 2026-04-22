@@ -190,7 +190,7 @@ export default async function AllNewsPage({
                 <p className="mt-2 text-[10px] font-semibold tracking-widest text-(--accent-2) uppercase sm:text-xs sm:tracking-[0.12em]">
                   {story.categoryLabel}
                 </p>
-                <h3 className="font-display mt-1 line-clamp-2 text-lg leading-tight text-stone-900 sm:text-xl">
+                <h3 className="font-display mt-1 line-clamp-3 text-base leading-tight text-stone-900 sm:text-lg">
                   {story.title}
                 </h3>
                 <p className="mt-1 text-[11px] text-stone-600 sm:text-xs">
@@ -199,11 +199,6 @@ export default async function AllNewsPage({
                     month: "short",
                     year: "numeric",
                   })}
-                </p>
-                <p
-                  className={`${story.locale === "bn" ? "font-bangla" : ""} mt-1 line-clamp-2 text-xs leading-5 text-stone-700 sm:mt-2 sm:line-clamp-3 sm:text-sm sm:leading-6`}
-                >
-                  {story.excerpt}
                 </p>
                 <Link
                   href={`/news/${story.slug}`}

@@ -102,7 +102,7 @@ export default async function Home() {
               topStories.map((story) => (
                 <article
                   key={story.id}
-                  className="border-b border-stone-200 pb-4 last:border-b-0"
+                  className="border-b border-stone-200 pb-4 last:border-b-0 last:pb-0"
                 >
                   <div className="mb-2 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
                     <Image
@@ -116,9 +116,11 @@ export default async function Home() {
                   <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
                     {story.categoryLabel}
                   </p>
-                  <h4 className="font-display mt-1 text-xl leading-tight text-stone-900">
-                    {story.title}
-                  </h4>
+                  <Link href={`/news/${story.slug}`}>
+                    <h4 className="font-display mt-1 text-xl leading-tight text-stone-900 transition-colors hover:text-(--accent)">
+                      {story.title}
+                    </h4>
+                  </Link>
                   <p
                     className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 text-sm leading-6 text-stone-700`}
                   >
@@ -156,19 +158,19 @@ export default async function Home() {
           </Link>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {latestReports.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-stone-400 p-5 text-sm text-stone-700 sm:col-span-2 xl:col-span-3">
+            <div className="col-span-2 rounded-xl border border-dashed border-stone-400 p-5 text-sm text-stone-700 lg:col-span-3 xl:col-span-4">
               No latest reports selected yet.
             </div>
           ) : (
             latestReports.map((story) => (
               <article
                 key={story.id}
-                className="group relative overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                className="group flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
               >
-                <Link href={`/news/${story.slug}`} className="block">
-                  <div className="relative aspect-[4/3] overflow-hidden bg-stone-100 sm:aspect-[16/9]">
+                <Link href={`/news/${story.slug}`} className="flex flex-col h-full">
+                  <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-stone-100">
                     <Image
                       src={story.heroImage}
                       alt={story.title}
@@ -176,31 +178,18 @@ export default async function Home() {
                       height={360}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-white/90 sm:text-xs sm:text-(--accent-2)">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-white sm:text-xs">
                         {story.categoryLabel}
                       </p>
                     </div>
                   </div>
-                  <div className="p-3 sm:hidden">
-                    <h4 className="font-display text-sm font-semibold leading-tight text-stone-900 line-clamp-2">
+                  <div className="flex flex-1 flex-col p-3 sm:p-4">
+                    <h4 className="font-display text-sm font-semibold leading-tight text-stone-900 line-clamp-3 sm:text-base lg:text-lg">
                       {story.title}
                     </h4>
-                  </div>
-                  <div className="hidden p-4 sm:block">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-(--accent-2)">
-                      {story.categoryLabel}
-                    </p>
-                    <h4 className="font-display mt-2 text-xl leading-tight text-stone-900">
-                      {story.title}
-                    </h4>
-                    <p
-                      className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 line-clamp-2 text-sm leading-6 text-stone-600`}
-                    >
-                      {story.excerpt}
-                    </p>
-                    <div className="mt-3 flex items-center justify-between text-xs text-stone-500">
+                    <div className="mt-auto flex items-center justify-between pt-2 text-[10px] text-stone-500 sm:text-xs">
                       <span>{story.author}</span>
                       <span>{story.readTime} min</span>
                     </div>
