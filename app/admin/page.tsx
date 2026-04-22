@@ -2217,12 +2217,10 @@ export default function AdminPage() {
             {(() => {
               const effectiveLatest = stories
                 .filter((s) => (pendingPlacements[s.id] ?? s.placement) === "latest")
-                .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-                .slice(0, 6);
+                .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
               const effectiveBriefs = stories
                 .filter((s) => (pendingPlacements[s.id] ?? s.placement) === "brief")
-                .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-                .slice(0, 6);
+                .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
               const effectiveLead = stories.find(
                 (s) => (pendingPlacements[s.id] ?? s.placement) === "lead",
               );
@@ -2230,11 +2228,11 @@ export default function AdminPage() {
                 <>
                   <p>Lead Story: {effectiveLead?.title ?? "Not selected"}</p>
                   <p className="mt-1">
-                    Frontline Briefs ({effectiveBriefs.length}/6):{" "}
+                    Frontline Briefs ({effectiveBriefs.length}):{" "}
                     {effectiveBriefs.map((story) => story.title).join(", ") || "None"}
                   </p>
                   <p className="mt-1">
-                    Latest ({effectiveLatest.length}/6):{" "}
+                    Latest ({effectiveLatest.length}):{" "}
                     {effectiveLatest.map((story) => story.title).join(", ") || "None"}
                   </p>
                 </>

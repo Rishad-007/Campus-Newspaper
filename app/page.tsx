@@ -12,7 +12,7 @@ export default async function Home() {
   const latestReports = stories
     .filter((story) => story.placement === "latest")
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-    .slice(0, 6);
+    .slice(0, 10);
 
   if (stories.length === 0) {
     return (
@@ -142,20 +142,21 @@ export default async function Home() {
           <h3 className="font-display text-2xl text-stone-900 sm:text-3xl">
             Latest Reports
           </h3>
-          <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-            <p className="text-sm text-stone-600">
-              Responsive cards for mobile, tablet, and desktop
-            </p>
-            <Link
-              href="/news"
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-(--accent) bg-(--accent) px-4 py-2 text-sm font-semibold text-white transition hover:brightness-150 sm:min-h-10 sm:w-auto"
-            >
+          <Link
+            href="/news"
+            className="group relative inline-flex min-h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-emerald-400 to-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0 sm:min-h-11 sm:w-auto sm:rounded-full"
+          >
+            <span className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+            <span className="relative flex items-center gap-2">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
               Visit All News
-            </Link>
-          </div>
+            </span>
+          </Link>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {latestReports.length === 0 ? (
             <div className="rounded-xl border border-dashed border-stone-400 p-5 text-sm text-stone-700 sm:col-span-2 xl:col-span-3">
               No latest reports selected yet.
@@ -164,37 +165,46 @@ export default async function Home() {
             latestReports.map((story) => (
               <article
                 key={story.id}
-                className="rounded-xl border border-stone-300 bg-(--surface) p-4 shadow-sm"
+                className="group relative overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
               >
-                <div className="mb-3 overflow-hidden rounded-lg border border-stone-300 bg-stone-100">
-                  <Image
-                    src={story.heroImage}
-                    alt={story.title}
-                    width={640}
-                    height={360}
-                    className="h-36 w-full object-cover"
-                  />
-                </div>
-                <p className="text-xs font-semibold tracking-[0.12em] text-(--accent-2) uppercase">
-                  {story.categoryLabel}
-                </p>
-                <h4 className="font-display mt-2 text-2xl leading-tight text-stone-900">
-                  {story.title}
-                </h4>
-                <p
-                  className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 line-clamp-3 text-sm leading-6 text-stone-700`}
-                >
-                  {story.excerpt}
-                </p>
-                <div className="mt-3 flex items-center justify-between text-xs text-stone-600">
-                  <span>{story.author}</span>
-                  <span>{story.readTime} min</span>
-                </div>
-                <Link
-                  href={`/news/${story.slug}`}
-                  className="mt-4 inline-block text-sm font-semibold text-(--accent)"
-                >
-                  Open story
+                <Link href={`/news/${story.slug}`} className="block">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-stone-100 sm:aspect-[16/9]">
+                    <Image
+                      src={story.heroImage}
+                      alt={story.title}
+                      width={640}
+                      height={360}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-white/90 sm:text-xs sm:text-(--accent-2)">
+                        {story.categoryLabel}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-3 sm:hidden">
+                    <h4 className="font-display text-sm font-semibold leading-tight text-stone-900 line-clamp-2">
+                      {story.title}
+                    </h4>
+                  </div>
+                  <div className="hidden p-4 sm:block">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-(--accent-2)">
+                      {story.categoryLabel}
+                    </p>
+                    <h4 className="font-display mt-2 text-xl leading-tight text-stone-900">
+                      {story.title}
+                    </h4>
+                    <p
+                      className={`${story.locale === "bn" ? "font-bangla" : ""} mt-2 line-clamp-2 text-sm leading-6 text-stone-600`}
+                    >
+                      {story.excerpt}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between text-xs text-stone-500">
+                      <span>{story.author}</span>
+                      <span>{story.readTime} min</span>
+                    </div>
+                  </div>
                 </Link>
               </article>
             ))
