@@ -34,9 +34,6 @@ export default async function Home() {
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
       <header className="paper-surface rounded-2xl px-4 py-5 sm:px-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-          <p className="text-xs tracking-[0.16em] text-stone-600 uppercase">
-            Saturday Edition • Dhaka • Vol 01
-          </p>
           <p className="text-xs tracking-[0.14em] text-stone-600 uppercase sm:text-right">
             Frontpage Highlights
           </p>
@@ -158,7 +155,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {latestReports.length === 0 ? (
             <div className="rounded-xl border border-dashed border-stone-400 p-5 text-sm text-stone-700 sm:col-span-2 xl:col-span-3">
               No latest reports selected yet.
