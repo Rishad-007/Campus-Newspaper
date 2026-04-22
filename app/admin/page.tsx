@@ -250,7 +250,6 @@ export default function AdminPage() {
 
   const myStories = useMemo(() => {
     if (!currentUser) return [];
-    if (currentUser.role === "owner") return stories;
     return stories.filter((story) => story.authorId === currentUser.id);
   }, [currentUser, stories]);
 
@@ -2203,155 +2202,182 @@ export default function AdminPage() {
         </section>
       )}
 
-      {effectiveActiveTab === "placement" && canManagePlacement && (
-        <section className="paper-surface rounded-2xl p-5 sm:p-6">
-          <h2 className="font-display text-2xl text-stone-900">
-            Front Page Placement
-          </h2>
-          <p className="mt-2 text-sm text-stone-600">
-            Choose which published stories go into Lead Story, Frontline Briefs,
-            and Latest.
-          </p>
+{effectiveActiveTab === "placement" && canManagePlacement && (
+        <>
+          <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100">
+                <FiMapPin className="h-5 w-5 text-rose-600" />
+              </div>
+              <div>
+                <h2 className="font-display text-xl text-stone-900">Front Page Placement</h2>
+                <p className="text-xs text-stone-500">Manage story positioning on homepage</p>
+              </div>
+            </div>
 
-          <div className="mt-4 rounded-xl border border-dashed border-stone-400 p-4 text-sm text-stone-700">
-            {(() => {
-              const effectiveLatest = stories
-                .filter((s) => (pendingPlacements[s.id] ?? s.placement) === "latest")
-                .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-              const effectiveBriefs = stories
-                .filter((s) => (pendingPlacements[s.id] ?? s.placement) === "brief")
-                .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-              const effectiveLead = stories.find(
-                (s) => (pendingPlacements[s.id] ?? s.placement) === "lead",
-              );
-              return (
-                <>
-                  <p>Lead Story: {effectiveLead?.title ?? "Not selected"}</p>
-                  <p className="mt-1">
-                    Frontline Briefs ({effectiveBriefs.length}):{" "}
-                    {effectiveBriefs.map((story) => story.title).join(", ") || "None"}
-                  </p>
-                  <p className="mt-1">
-                    Latest ({effectiveLatest.length}):{" "}
-                    {effectiveLatest.map((story) => story.title).join(", ") || "None"}
-                  </p>
-                </>
-              );
-            })()}
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="group relative overflow-hidden rounded-lg border border-rose-200 bg-rose-50 p-2.5 transition-all hover:shadow-sm sm:p-3">
+                <div className="absolute top-0 left-0 h-0.5 w-full bg-rose-500" />
+                <FiLayout className="h-4 w-4 text-rose-500 sm:h-5 sm:w-5" />
+                <p className="mt-1 font-display text-lg font-bold text-stone-900 sm:text-xl">
+                  {stories.find((s) => (pendingPlacements[s.id] ?? s.placement) === "lead") ? "1" : "0"}
+                </p>
+                <p className="text-[10px] font-medium text-stone-600 sm:text-xs">Lead Story</p>
+              </div>
+
+              <div className="group relative overflow-hidden rounded-lg border border-amber-200 bg-amber-50 p-2.5 transition-all hover:shadow-sm sm:p-3">
+                <div className="absolute top-0 left-0 h-0.5 w-full bg-amber-500" />
+                <FiList className="h-4 w-4 text-amber-500 sm:h-5 sm:w-5" />
+                <p className="mt-1 font-display text-lg font-bold text-stone-900 sm:text-xl">
+                  {stories.filter((s) => (pendingPlacements[s.id] ?? s.placement) === "brief").length}
+                </p>
+                <p className="text-[10px] font-medium text-stone-600 sm:text-xs">Briefs</p>
+              </div>
+
+              <div className="group relative overflow-hidden rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 transition-all hover:shadow-sm sm:p-3">
+                <div className="absolute top-0 left-0 h-0.5 w-full bg-emerald-500" />
+                <FiClock className="h-4 w-4 text-emerald-500 sm:h-5 sm:w-5" />
+                <p className="mt-1 font-display text-lg font-bold text-stone-900 sm:text-xl">
+                  {stories.filter((s) => (pendingPlacements[s.id] ?? s.placement) === "latest").length}
+                </p>
+                <p className="text-[10px] font-medium text-stone-600 sm:text-xs">Latest</p>
+              </div>
+            </div>
+
+            {Object.keys(pendingPlacements).length > 0 && (
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <span className="text-xs font-semibold text-amber-600">
+                  {Object.keys(pendingPlacements).length} pending change(s)
+                </span>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void saveAllPlacements()}
+                  className="flex items-center gap-2 rounded-xl bg-(--accent) px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:shadow-lg disabled:opacity-60"
+                >
+                  <FiCheckCircle className="h-4 w-4" />
+                  Save Placement
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => clearPendingPlacements()}
+                  className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:bg-stone-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="mt-5 grid gap-4">
+          <div className="grid gap-2 sm:gap-3">
             {stories
               .filter((story) => story.status === "published")
-              .map((story) => (
-                <article
-                  key={story.id}
-                  className="rounded-xl border border-stone-300 bg-white p-4"
-                >
-                  <p className="font-semibold text-stone-900">{story.title}</p>
-                  <p className="mt-1 text-xs text-stone-600">
-                    {story.authorName}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(() => {
-                      const effectivePlacement =
-                        pendingPlacements[story.id] ?? story.placement;
-                      const isPending = story.id in pendingPlacements;
-                      return (
-                        <>
-                          <button
-                            type="button"
-                            disabled={saving}
-                            onClick={() =>
-                              setPendingPlacement(
-                                story.id,
-                                effectivePlacement === "lead" ? "none" : "lead",
-                              )
-                            }
-                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                              effectivePlacement === "lead"
-                                ? "bg-(--accent) text-white"
-                                : isPending
-                                  ? "border-2 border-amber-500 text-amber-700"
-                                  : "border border-stone-400 text-stone-700"
-                            }`}
-                          >
-                            Lead Story
-                          </button>
-                          <button
-                            type="button"
-                            disabled={saving}
-                            onClick={() =>
-                              setPendingPlacement(
-                                story.id,
-                                effectivePlacement === "brief" ? "none" : "brief",
-                              )
-                            }
-                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                              effectivePlacement === "brief"
-                                ? "bg-(--accent) text-white"
-                                : isPending
-                                  ? "border-2 border-amber-500 text-amber-700"
-                                  : "border border-stone-400 text-stone-700"
-                            }`}
-                          >
-                            Frontline Briefs
-                          </button>
-                          <button
-                            type="button"
-                            disabled={saving}
-                            onClick={() =>
-                              setPendingPlacement(
-                                story.id,
-                                effectivePlacement === "latest" ? "none" : "latest",
-                              )
-                            }
-                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                              effectivePlacement === "latest"
-                                ? "bg-(--accent) text-white"
-                                : isPending
-                                  ? "border-2 border-amber-500 text-amber-700"
-                                  : "border border-stone-400 text-stone-700"
-                            }`}
-                          >
-                            Latest
-                          </button>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </article>
-              ))}
+              .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+              .map((story) => {
+                const effectivePlacement = pendingPlacements[story.id] ?? story.placement;
+                const isPending = story.id in pendingPlacements;
+                return (
+                  <article
+                    key={story.id}
+                    className={`group flex items-center gap-2 overflow-hidden rounded-lg border px-2 py-2 transition-all sm:gap-3 sm:px-3 sm:py-2.5 ${
+                      isPending
+                        ? "border-amber-400 bg-amber-50"
+                        : effectivePlacement === "lead"
+                          ? "border-rose-400 bg-rose-50"
+                          : effectivePlacement === "brief"
+                            ? "border-amber-400 bg-amber-50"
+                            : effectivePlacement === "latest"
+                              ? "border-emerald-400 bg-emerald-50"
+                              : "border-stone-200 bg-white"
+                    }`}
+                  >
+                    {story.heroImageUrl && (
+                      <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded bg-stone-100 sm:h-14 sm:w-20">
+                        <Image
+                          src={story.heroImageUrl}
+                          alt={story.title}
+                          width={100}
+                          height={70}
+                          className="h-full w-full object-cover"
+                        />
+                        {effectivePlacement !== "none" && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className={`rounded px-1 py-0.5 text-[9px] font-bold uppercase sm:text-[10px] ${
+                              effectivePlacement === "lead" ? "bg-rose-500 text-white" :
+                              effectivePlacement === "brief" ? "bg-amber-500 text-white" :
+                              "bg-emerald-500 text-white"
+                            }`}>
+                              {effectivePlacement === "lead" ? "Lead" : effectivePlacement === "brief" ? "Brief" : "Latest"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500 sm:text-xs truncate">
+                        {story.categoryLabel}
+                      </p>
+                      <h4 className="text-xs font-semibold leading-tight text-stone-900 line-clamp-1 sm:text-sm truncate">
+                        {story.title}
+                      </h4>
+                      <div className="mt-1.5 flex flex-wrap gap-1 sm:mt-2 sm:gap-1.5">
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() =>
+                            setPendingPlacement(story.id, effectivePlacement === "lead" ? "none" : "lead")
+                          }
+                          className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium transition-all sm:text-xs ${
+                            effectivePlacement === "lead"
+                              ? "bg-rose-500 text-white"
+                              : "border border-stone-300 bg-white text-stone-600 hover:bg-rose-50"
+                          }`}
+                        >
+                          <FiLayout className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          Lead
+                        </button>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() =>
+                            setPendingPlacement(story.id, effectivePlacement === "brief" ? "none" : "brief")
+                          }
+                          className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium transition-all sm:text-xs ${
+                            effectivePlacement === "brief"
+                              ? "bg-amber-500 text-white"
+                              : "border border-stone-300 bg-white text-stone-600 hover:bg-amber-50"
+                          }`}
+                        >
+                          <FiList className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          Brief
+                        </button>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() =>
+                            setPendingPlacement(story.id, effectivePlacement === "latest" ? "none" : "latest")
+                          }
+                          className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium transition-all sm:text-xs ${
+                            effectivePlacement === "latest"
+                              ? "bg-emerald-500 text-white"
+                              : "border border-stone-300 bg-white text-stone-600 hover:bg-emerald-50"
+                          }`}
+                        >
+                          <FiClock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          Latest
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
           </div>
 
-          {Object.keys(pendingPlacements).length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => void saveAllPlacements()}
-                className="rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Save Placement
-              </button>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => clearPendingPlacements()}
-                className="rounded-full border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Cancel Changes
-              </button>
-            </div>
-          )}
-
-          <div className="mt-8 border-t border-dashed border-stone-400 pt-6">
-            <h3 className="font-display text-2xl text-stone-900">
-              Tag Management
-            </h3>
+          <div className="mt-8 rounded-2xl border border-dashed border-stone-300 p-4 sm:p-6">
+            <h3 className="font-display text-xl text-stone-900">Tag Management</h3>
             <p className="mt-2 text-sm text-stone-600">
-              Hide removes a tag from all stories. Remove deletes the tag
-              permanently.
+              Hide removes a tag from all stories. Remove deletes the tag permanently.
             </p>
 
             <div className="mt-4 max-w-sm">
@@ -2388,7 +2414,7 @@ export default function AdminPage() {
                         type="button"
                         disabled={saving}
                         onClick={() => void hideTagFromStories(tag)}
-                        className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-full border border-stone-400 px-3 py-1 text-xs font-semibold text-stone-700 disabled:opacity-60"
                       >
                         Hide Tag
                       </button>
@@ -2396,7 +2422,7 @@ export default function AdminPage() {
                         type="button"
                         disabled={saving}
                         onClick={() => void removeTagPermanently(tag)}
-                        className="rounded-full border border-red-500 px-3 py-1 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-full border border-red-500 px-3 py-1 text-xs font-semibold text-red-700 disabled:opacity-60"
                       >
                         Remove Tag
                       </button>
@@ -2406,7 +2432,7 @@ export default function AdminPage() {
               ))}
             </div>
           </div>
-        </section>
+        </>
       )}
 
       {effectiveActiveTab === "my-stories" && canWrite && (
