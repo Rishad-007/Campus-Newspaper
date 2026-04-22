@@ -41,7 +41,10 @@ values
   ('sports', 'Sports', 'খেলা'),
   ('health', 'Health', 'স্বাস্থ্য'),
   ('education', 'Education', 'শিক্ষা'),
-  ('economy', 'Economy', 'অর্থনীতি')
+  ('economy', 'Economy', 'অর্থনীতি'),
+  ('column', 'Column', 'কলাম'),
+  ('feature', 'Feature', 'ফিচার'),
+  ('hall', 'Hall', 'হল')
 on conflict (slug) do nothing;
 
 alter table public.articles

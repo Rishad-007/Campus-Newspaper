@@ -1121,13 +1121,13 @@ export default function AdminPage() {
     setNotice("");
 
     const entries = Object.entries(pendingPlacements);
-    const newLeadId = entries.find(([, p]) => p === "lead")?.[0];
+    const currentLeadIds = stories.filter((s) => s.placement === "lead").map((s) => s.id);
+    const newLeadIds = entries
+      .filter(([, p]) => p === "lead")
+      .map(([id]) => id);
+    const allLeadIds = [...currentLeadIds, ...newLeadIds].slice(0, 2);
 
     for (const [storyId, placement] of entries) {
-      if (placement === "lead" && newLeadId !== storyId) {
-        continue;
-      }
-
       const { error: updateError } = await supabaseClient
         .from("articles")
         .update({ placement })
@@ -1140,16 +1140,14 @@ export default function AdminPage() {
       }
     }
 
-    if (newLeadId) {
-      const leadStories = stories.filter(
-        (s) => s.placement === "lead" && s.id !== newLeadId,
-      );
-      for (const story of leadStories) {
-        await supabaseClient
-          .from("articles")
-          .update({ placement: "none" })
-          .eq("id", story.id);
-      }
+    const leadStoriesToRemove = stories.filter(
+      (s) => s.placement === "lead" && !allLeadIds.includes(s.id),
+    );
+    for (const story of leadStoriesToRemove) {
+      await supabaseClient
+        .from("articles")
+        .update({ placement: "none" })
+        .eq("id", story.id);
     }
 
     setSaving(false);
@@ -2225,9 +2223,9 @@ export default function AdminPage() {
                 <div className="absolute top-0 left-0 h-0.5 w-full bg-rose-500" />
                 <FiLayout className="h-4 w-4 text-rose-500 sm:h-5 sm:w-5" />
                 <p className="mt-1 font-display text-lg font-bold text-stone-900 sm:text-xl">
-                  {stories.find((s) => (pendingPlacements[s.id] ?? s.placement) === "lead") ? "1" : "0"}
+                  {stories.filter((s) => (pendingPlacements[s.id] ?? s.placement) === "lead").length}/2
                 </p>
-                <p className="text-[10px] font-medium text-stone-600 sm:text-xs">Lead Story</p>
+                <p className="text-[10px] font-medium text-stone-600 sm:text-xs">Lead Stories</p>
               </div>
 
               <div className="group relative overflow-hidden rounded-lg border border-amber-200 bg-amber-50 p-2.5 transition-all hover:shadow-sm sm:p-3">
