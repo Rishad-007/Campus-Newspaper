@@ -34,13 +34,25 @@ export async function generateMetadata({
   return {
     title: article.title,
     description: article.excerpt,
+    alternates: {
+      canonical: pageUrl,
+      languages: {
+        en: pageUrl,
+        bn: pageUrl,
+      },
+    },
     openGraph: {
       title: article.title,
       description: article.excerpt,
       url: pageUrl,
+      siteName: "Daily BRUR",
+      locale: article.locale === "bn" ? "bn_BD" : "en_GB",
+      alternateLocale: article.locale === "bn" ? "en_GB" : "bn_BD",
       type: "article",
       publishedTime: article.publishedAt,
+      modifiedTime: article.publishedAt,
       authors: [article.author],
+      tags: article.tags,
       images: [
         {
           url: imageUrl,
@@ -72,6 +84,11 @@ export default async function NewsArticlePage({
     notFound();
   }
 
+  const pageUrl = `${SITE_URL}/news/${article.slug}`;
+  const imageUrl = article.heroImage.startsWith("http")
+    ? article.heroImage
+    : `${SITE_URL}${article.heroImage}`;
+
   const related = (await getPublicStories())
     .filter((item) => item.slug !== article.slug)
     .slice(0, 3);
@@ -95,8 +112,69 @@ export default async function NewsArticlePage({
   ).format(publishedAt);
   const printUrl = `/news/${article.slug}?print=1`;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    description: article.excerpt,
+    image: imageUrl,
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    author: [
+      {
+        "@type": "Person",
+        name: article.author,
+      },
+    ],
+    publisher: {
+      "@type": "Organization",
+      name: "Daily BRUR",
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": pageUrl,
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: article.categoryLabel,
+        item: `${SITE_URL}/category/${article.category}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: article.title,
+        item: pageUrl,
+      },
+    ],
+  };
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <AutoPrintTrigger enabled={shouldAutoPrint} />
       <header className="paper-surface rounded-2xl p-5 print-hidden sm:p-6">
         <Link

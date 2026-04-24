@@ -1,13 +1,51 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 import {
   getPublicCategoryMap,
   getPublicStoriesByCategorySlug,
 } from "@/lib/news-service";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://dailybrur.com";
+
 type CategoryPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export async function generateMetadata({
+  params,
+}: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const category = (await getPublicCategoryMap()).find(
+    (item) => item.slug === slug,
+  );
+
+  if (!category) {
+    return { title: "Category Not Found" };
+  }
+
+  const pageUrl = `${SITE_URL}/category/${slug}`;
+
+  return {
+    title: `${category.label} News`,
+    description: `Latest ${category.label} news and stories from Daily BRUR - Campus newspaper of Begum Rokeya University, Rangpur`,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title: `${category.label} News - Daily BRUR`,
+      description: `Latest ${category.label} news and stories from Daily BRUR`,
+      url: pageUrl,
+      siteName: "Daily BRUR",
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: `${category.label} News - Daily BRUR`,
+      description: `Latest ${category.label} news and stories from Daily BRUR`,
+    },
+  };
+}
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;

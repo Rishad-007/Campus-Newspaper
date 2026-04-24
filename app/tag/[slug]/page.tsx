@@ -1,9 +1,39 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import { getPublicStoriesByTagSlug } from "@/lib/news-service";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://dailybrur.com";
 
 type TagPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export async function generateMetadata({
+  params,
+}: TagPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const pageUrl = `${SITE_URL}/tag/${slug}`;
+
+  return {
+    title: `#${slug}`,
+    description: `Latest stories tagged with #${slug} from Daily BRUR - Campus newspaper of Begum Rokeya University, Rangpur`,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title: `#${slug} - Daily BRUR`,
+      description: `Latest stories tagged with #${slug} from Daily BRUR`,
+      url: pageUrl,
+      siteName: "Daily BRUR",
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: `#${slug} - Daily BRUR`,
+      description: `Latest stories tagged with #${slug} from Daily BRUR`,
+    },
+  };
+}
 
 export default async function TagPage({ params }: TagPageProps) {
   const { slug } = await params;
